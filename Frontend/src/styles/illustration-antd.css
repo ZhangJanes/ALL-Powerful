@@ -1,0 +1,66 @@
+/**
+ * Ant 风格插画色板：中性主色、暖色点缀、轻描边（随 data-theme 变化）
+ */
+html {
+  --ill-primary: #52525b;
+  --ill-primary-mid: #71717a;
+  --ill-primary-soft: #f4f4f5;
+  --ill-accent-warm: #faad14;
+  --ill-accent-warm-soft: rgba(250, 173, 20, 0.18);
+  --ill-success: #52c41a;
+  --ill-success-soft: #f6ffed;
+  --ill-error: #ff4d4f;
+  --ill-error-soft: #fff2f0;
+  --ill-surface: #f5f5f5;
+  --ill-paper: #ffffff;
+  --ill-line: rgba(0, 0, 0, 0.06);
+  --ill-line-strong: rgba(0, 0, 0, 0.12);
+  --ill-decor-a: rgba(82, 82, 91, 0.14);
+  --ill-decor-b: rgba(250, 173, 20, 0.16);
+  --ill-shadow-oval: rgba(0, 0, 0, 0.08);
+  --ill-muted: #8c8c8c;
+  /** 线宽与描边色：涂鸦预设下由 illustration-sketch.css 加重 */
+  --ill-stroke-w: 1.35;
+  --ill-ink: var(--ill-line-strong);
+}
+
+html[data-theme='dark'] {
+  --ill-primary: #a1a1aa;
+  --ill-primary-mid: #d4d4d8;
+  --ill-primary-soft: rgba(161, 161, 170, 0.2);
+  --ill-accent-warm: #ffc53d;
+  --ill-accent-warm-soft: rgba(250, 173, 20, 0.22);
+  --ill-success: #73d13d;
+  --ill-success-soft: rgba(82, 196, 26, 0.16);
+  --ill-error: #ff7875;
+  --ill-error-soft: rgba(255, 77, 79, 0.14);
+  --ill-surface: rgba(255, 255, 255, 0.08);
+  --ill-paper: rgba(255, 255, 255, 0.1);
+  --ill-line: rgba(255, 255, 255, 0.12);
+  --ill-line-strong: rgba(255, 255, 255, 0.2);
+  --ill-decor-a: rgba(161, 161, 170, 0.2);
+  --ill-decor-b: rgba(250, 173, 20, 0.2);
+  --ill-shadow-oval: rgba(0, 0, 0, 0.45);
+  --ill-muted: rgba(255, 255, 255, 0.45);
+  --ill-ink: var(--ill-line-strong);
+}
+
+/* Ant 暖灰预设：插画主色与页面一致，略偏石色/暖灰 */
+html[data-preset='antdraw'] {
+  --ill-primary: #44403c;
+  --ill-primary-mid: #57534e;
+  --ill-primary-soft: #fff7ed;
+  --ill-surface: #faf8f5;
+  --ill-paper: #fffdfb;
+  --ill-decor-a: rgba(234, 88, 12, 0.12);
+  --ill-shadow-oval: rgba(180, 83, 9, 0.1);
+}
+html[data-preset='antdraw'][data-theme='dark'] {
+  --ill-primary: #d6d3d1;
+  --ill-primary-mid: #e7e5e4;
+  --ill-primary-soft: rgba(234, 88, 12, 0.18);
+  --ill-surface: rgba(255, 255, 255, 0.07);
+  --ill-paper: rgba(255, 255, 255, 0.09);
+  --ill-decor-a: rgba(251, 146, 60, 0.2);
+  --ill-decor-b: rgba(245, 158, 11, 0.18);
+}

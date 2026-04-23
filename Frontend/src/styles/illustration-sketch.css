@@ -1,0 +1,51 @@
+/**
+ * 涂鸦 / 新粗野主义插画：粗黑描边、高饱和填色、硬阴影（与参考手帐 UI 一致）
+ * 依赖 html[data-preset='sketch']；主色与预设一致为绿系
+ */
+html[data-preset='sketch'] {
+  --ill-stroke-w: 2.85;
+  --ill-ink: #4a3f36;
+  --ill-primary: #16a34a;
+  --ill-primary-mid: #15803d;
+  --ill-primary-soft: #bbf7d0;
+  --ill-accent-warm: #ea580c;
+  --ill-accent-warm-soft: #fed7aa;
+  --ill-success: #16a34a;
+  --ill-success-soft: #bbf7d0;
+  --ill-error: #dc2626;
+  --ill-error-soft: #fecaca;
+  --ill-surface: #e7e2d9;
+  --ill-paper: #ffffff;
+  --ill-line: rgba(20, 20, 20, 0.12);
+  --ill-line-strong: #4a3f36;
+  --ill-decor-a: #fbbf24;
+  --ill-decor-b: #f472b6;
+  --ill-shadow-oval: rgba(20, 20, 20, 0.2);
+  --ill-muted: #57534e;
+  --ill-frame-bg: #ffffff;
+  --ill-frame-shadow: 4px 4px 0 rgba(74, 63, 54, 0.85);
+}
+
+html[data-preset='sketch'][data-theme='dark'] {
+  --ill-stroke-w: 2.75;
+  --ill-ink: #ece8df;
+  --ill-primary: #4ade80;
+  --ill-primary-mid: #22c55e;
+  --ill-primary-soft: #14532d;
+  --ill-accent-warm: #fb923c;
+  --ill-accent-warm-soft: #5c3d1e;
+  --ill-success: #4ade80;
+  --ill-success-soft: #14532d;
+  --ill-error: #f87171;
+  --ill-error-soft: #5c2020;
+  --ill-surface: #3d3833;
+  --ill-paper: #2c2824;
+  --ill-line: rgba(236, 232, 223, 0.18);
+  --ill-line-strong: #ece8df;
+  --ill-decor-a: #facc15;
+  --ill-decor-b: #f9a8d4;
+  --ill-shadow-oval: rgba(0, 0, 0, 0.55);
+  --ill-muted: #a8a29e;
+  --ill-frame-bg: var(--ill-paper);
+  --ill-frame-shadow: 4px 4px 0 #0a0908;
+}
