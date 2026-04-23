@@ -251,6 +251,13 @@ html[data-preset='sketch'] .n-tag {
   box-shadow: 2px 2px 0 var(--sk-ui-pop);
   font-weight: 700;
   border-radius: 999px !important;
+  box-sizing: border-box !important;
+  /* 粗描边 + 默认 line-height:1 易把中文挤扁，略增垂直内边距与行高 */
+  height: auto !important;
+  min-height: calc(var(--n-height) + 6px) !important;
+  line-height: 1.35 !important;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
 }
 
 html[data-preset='sketch'] .n-avatar {
