@@ -18,8 +18,26 @@ const content = ref('')
 const category = ref('生活')
 const todoMode = ref(false)
 const todoLines = ref('')
+const remindAtTs = ref<number | null>(null)
 
 const existing = computed(() => store.memos.find((m) => m.id === id.value))
+
+function parseDateTimeToTs(input?: string) {
+  if (!input) return null
+  const ts = new Date(input.replace(' ', 'T')).getTime()
+  return Number.isNaN(ts) ? null : ts
+}
+
+function formatTsToDateTime(ts: number) {
+  const d = new Date(ts)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  const ss = String(d.getSeconds()).padStart(2, '0')
+  return `${y}-${m}-${day} ${hh}:${mm}:${ss}`
+}
 
 watch(
   () => route.fullPath,
@@ -30,6 +48,7 @@ watch(
       category.value = '生活'
       todoMode.value = false
       todoLines.value = ''
+      remindAtTs.value = null
       return
     }
     const m = existing.value
@@ -44,6 +63,7 @@ watch(
         todoMode.value = false
         todoLines.value = ''
       }
+      remindAtTs.value = parseDateTimeToTs(m.remindAt)
     }
   },
   { immediate: true },
@@ -68,6 +88,7 @@ function save() {
       content: todoMode.value ? '' : content.value,
       category: category.value,
       pinned: false,
+      remindAt: remindAtTs.value ? formatTsToDateTime(remindAtTs.value) : undefined,
       todos,
     })
     message.success('已保存')
@@ -78,6 +99,7 @@ function save() {
     title: title.value || '未命名',
     content: todoMode.value ? '' : content.value,
     category: category.value,
+    remindAt: remindAtTs.value ? formatTsToDateTime(remindAtTs.value) : undefined,
     todos,
   })
   message.success('已保存')
@@ -102,6 +124,16 @@ function save() {
       <NButton size="tiny" secondary @click="todoMode = !todoMode">{{ todoMode ? '富文本' : '待办清单' }}</NButton>
       <NSelect v-model:value="category" size="small" :options="['生活', '工作', '家庭', '购物', '账单'].map((v) => ({ label: v, value: v }))" style="width: 120px" />
     </NSpace>
+
+    <NFormItem label="提醒时间（可选）">
+      <NDatePicker
+        v-model:value="remindAtTs"
+        type="datetime"
+        clearable
+        format="yyyy-MM-dd HH:mm:ss"
+        style="width: 100%"
+      />
+    </NFormItem>
 
     <NInput
       v-if="!todoMode"
