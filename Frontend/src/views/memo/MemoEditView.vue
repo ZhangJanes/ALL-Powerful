@@ -69,7 +69,7 @@ watch(
   { immediate: true },
 )
 
-function save() {
+async function save() {
   const todos = todoMode.value
     ? todoLines.value
         .split('\n')
@@ -83,7 +83,7 @@ function save() {
     : undefined
 
   if (isNew.value) {
-    store.addMemo({
+    await store.saveMemoToServer({
       title: title.value || '未命名',
       content: todoMode.value ? '' : content.value,
       category: category.value,
@@ -95,13 +95,14 @@ function save() {
     router.replace({ name: 'memo' })
     return
   }
-  store.updateMemo(id.value, {
+  await store.saveMemoToServer({
     title: title.value || '未命名',
     content: todoMode.value ? '' : content.value,
     category: category.value,
     remindAt: remindAtTs.value ? formatTsToDateTime(remindAtTs.value) : undefined,
+    pinned: existing.value?.pinned || false,
     todos,
-  })
+  }, id.value)
   message.success('已保存')
   router.back()
 }

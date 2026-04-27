@@ -27,7 +27,7 @@ function formatTsToDateTime(ts: number) {
   return `${y}-${m}-${day} ${hh}:${mm}:${ss}`
 }
 
-function save() {
+async function save() {
   if (!title.value.trim() || !place.value.trim()) {
     message.warning('请填写标题与地点')
     return
@@ -40,7 +40,7 @@ function save() {
     message.warning('结束时间不能早于开始时间')
     return
   }
-  store.addTrip({
+  await store.saveTripToServer({
     title: title.value,
     category: category.value,
     start: formatTsToDateTime(start.value),

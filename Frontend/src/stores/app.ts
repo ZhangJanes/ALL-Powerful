@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { apiRequest } from '@/api/client'
 
 export type Memo = {
   id: string
@@ -56,8 +57,18 @@ export type PhotoItem = {
   id: string
   name: string
   category: string
+  libraryId: string
   locked: boolean
   at: string
+  previewUrl?: string
+}
+
+export type PhotoLibrary = {
+  id: string
+  name: string
+  visibility: 'public' | 'private'
+  password?: string
+  createdAt: string
 }
 
 export type Activity = { id: string; text: string; at: string; route?: { name: string; params?: Record<string, string> } }
@@ -76,6 +87,7 @@ function todayYmd() {
 
 export const useAppStore = defineStore('app', () => {
   const today = todayYmd()
+  const publicLibraryId = 'lib_public'
   const weather = ref('晴 22℃')
   const monthlyBudget = ref(2000)
   const monthlySpent = ref(770)
@@ -156,14 +168,22 @@ export const useAppStore = defineStore('app', () => {
   ])
 
   const photos = ref<PhotoItem[]>([
-    { id: 'p1', name: '2026体检报告', category: '病历', locked: true, at: '2026-03-10' },
-    { id: 'p2', name: '春节全家福', category: '家庭照片', locked: false, at: '2026-02-01' },
-    { id: 'p3', name: '身份证正反面', category: '证件照', locked: true, at: '2025-12-20' },
-    { id: 'p4', name: '装修报价单', category: '发票', locked: false, at: '2026-01-15' },
-    { id: 'p5', name: '孩子获奖证书', category: '家庭照片', locked: false, at: '2025-11-02' },
-    { id: 'p6', name: '合同扫描件', category: '工作文件', locked: true, at: '2026-03-01' },
-    { id: 'p7', name: '旅行机票截图', category: '工作文件', locked: false, at: '2026-04-01' },
-    { id: 'p8', name: '老照片翻拍', category: '家庭照片', locked: false, at: '2024-08-10' },
+    { id: 'p1', name: '2026体检报告', category: '病历', libraryId: publicLibraryId, locked: true, at: '2026-03-10' },
+    { id: 'p2', name: '春节全家福', category: '家庭照片', libraryId: publicLibraryId, locked: false, at: '2026-02-01' },
+    { id: 'p3', name: '身份证正反面', category: '证件照', libraryId: publicLibraryId, locked: true, at: '2025-12-20' },
+    { id: 'p4', name: '装修报价单', category: '发票', libraryId: publicLibraryId, locked: false, at: '2026-01-15' },
+    { id: 'p5', name: '孩子获奖证书', category: '家庭照片', libraryId: publicLibraryId, locked: false, at: '2025-11-02' },
+    { id: 'p6', name: '合同扫描件', category: '工作文件', libraryId: publicLibraryId, locked: true, at: '2026-03-01' },
+    { id: 'p7', name: '旅行机票截图', category: '工作文件', libraryId: publicLibraryId, locked: false, at: '2026-04-01' },
+    { id: 'p8', name: '老照片翻拍', category: '家庭照片', libraryId: publicLibraryId, locked: false, at: '2024-08-10' },
+  ])
+  const photoLibraries = ref<PhotoLibrary[]>([
+    {
+      id: publicLibraryId,
+      name: '公共库',
+      visibility: 'public',
+      createdAt: `${today} 00:00:00`,
+    },
   ])
 
   const activities = ref<Activity[]>([
@@ -200,6 +220,10 @@ export const useAppStore = defineStore('app', () => {
   })
 
   const budgetLeft = computed(() => Math.max(0, monthlyBudget.value - monthlySpent.value))
+  const publicPhotos = computed(() => {
+    const allowed = new Set(photoLibraries.value.filter((x) => x.visibility === 'public').map((x) => x.id))
+    return photos.value.filter((p) => allowed.has(p.libraryId))
+  })
 
   function pushActivity(text: string) {
     activities.value.unshift({ id: uid(), text, at: '刚刚' })
@@ -243,6 +267,115 @@ export const useAppStore = defineStore('app', () => {
     pushActivity(`记录灵感：${i.title}`)
   }
 
+  function createPhotoLibrary(payload: { name: string; visibility: 'public' | 'private'; password?: string }) {
+    const name = payload.name.trim()
+    if (!name) return null
+    if (photoLibraries.value.some((x) => x.name === name)) return null
+    const lib: PhotoLibrary = {
+      id: `lib_${uid()}`,
+      name,
+      visibility: payload.visibility,
+      password: payload.visibility === 'private' ? payload.password?.trim() || '' : undefined,
+      createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+    }
+    photoLibraries.value.unshift(lib)
+    return lib
+  }
+
+  function verifyLibraryPassword(libraryId: string, password: string) {
+    const lib = photoLibraries.value.find((x) => x.id === libraryId)
+    if (!lib) return false
+    if (lib.visibility === 'public') return true
+    return lib.password === password
+  }
+
+  async function syncMemos() {
+    const rows = await apiRequest<any[]>('/memos')
+    memos.value = rows.map((x) => ({
+      id: String(x.id),
+      title: x.title,
+      content: x.content || '',
+      category: x.category,
+      pinned: Boolean(x.pinned),
+      remindAt: x.remindAt ? String(x.remindAt).replace('T', ' ') : undefined,
+      updatedAt: String(x.updatedAt).replace('T', ' '),
+      todos: (x.todos || []).map((t: any) => ({ id: String(t.id), text: t.text, done: Boolean(t.done) })),
+    }))
+  }
+
+  async function saveMemoToServer(input: Omit<Memo, 'id' | 'updatedAt'>, id?: string) {
+    const payload = {
+      title: input.title,
+      content: input.content,
+      category: input.category,
+      pinned: input.pinned,
+      remindAt: input.remindAt ? input.remindAt.replace(' ', 'T') : null,
+      todos: (input.todos || []).map((t) => ({ text: t.text, done: t.done })),
+    }
+    if (id) await apiRequest(`/memos/${id}`, 'PUT', payload)
+    else await apiRequest('/memos', 'POST', payload)
+    await syncMemos()
+  }
+
+  async function syncTrips() {
+    const rows = await apiRequest<any[]>('/trips')
+    trips.value = rows.map((x) => ({
+      id: String(x.id),
+      title: x.title,
+      category: x.category,
+      start: String(x.startAt).replace('T', ' '),
+      end: String(x.endAt).replace('T', ' '),
+      place: x.place,
+      done: Boolean(x.done),
+      checklist: (x.checklist || []).map((c: any) => ({ id: String(c.id), text: c.text, done: Boolean(c.done) })),
+    }))
+  }
+
+  async function saveTripToServer(input: Omit<Trip, 'id'>, id?: string) {
+    const payload = {
+      title: input.title,
+      category: input.category,
+      startAt: input.start.replace(' ', 'T'),
+      endAt: input.end.replace(' ', 'T'),
+      place: input.place,
+      done: input.done,
+      checklist: (input.checklist || []).map((c) => ({ text: c.text, done: c.done })),
+    }
+    if (id) await apiRequest(`/trips/${id}`, 'PUT', payload)
+    else await apiRequest('/trips', 'POST', payload)
+    await syncTrips()
+  }
+
+  async function syncPhotoLibrariesAndPhotos() {
+    const libs = await apiRequest<any[]>('/photos/libraries')
+    photoLibraries.value = libs.map((x) => ({
+      id: String(x.id),
+      name: x.name,
+      visibility: x.visibility,
+      createdAt: String(x.createdAt).replace('T', ' '),
+      password: undefined,
+    }))
+    const all = await apiRequest<any[]>('/photos/public')
+    photos.value = all.map((p) => ({
+      id: String(p.id),
+      name: p.name,
+      category: p.category,
+      libraryId: String(p.libraryId),
+      locked: Boolean(p.locked),
+      at: p.atDate,
+      previewUrl: p.objectKey || undefined,
+    }))
+  }
+
+  async function syncMessages() {
+    const rows = await apiRequest<any[]>('/messages')
+    activities.value = rows.slice(0, 20).map((r, idx) => ({
+      id: `msg_${idx}`,
+      text: r.title,
+      at: r.statusLabel,
+    }))
+  }
+
   return {
     weather,
     monthlyBudget,
@@ -253,6 +386,7 @@ export const useAppStore = defineStore('app', () => {
     trips,
     ideas,
     photos,
+    photoLibraries,
     activities,
     memoCategory,
     achievements,
@@ -260,6 +394,7 @@ export const useAppStore = defineStore('app', () => {
     todoProgress,
     habitToday,
     budgetLeft,
+    publicPhotos,
     pushActivity,
     addMemo,
     updateMemo,
@@ -267,5 +402,14 @@ export const useAppStore = defineStore('app', () => {
     checkIn,
     addTrip,
     addIdea,
+    createPhotoLibrary,
+    verifyLibraryPassword,
+    syncMemos,
+    saveMemoToServer,
+    syncTrips,
+    saveTripToServer,
+    syncPhotoLibrariesAndPhotos,
+    syncMessages,
+    publicLibraryId,
   }
 })

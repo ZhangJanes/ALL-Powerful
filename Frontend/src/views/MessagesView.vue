@@ -1,18 +1,31 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { ArrowBackOutline } from '@vicons/ionicons5'
 import { useRouter } from 'vue-router'
 import { useListDisplayMode, staggerDelay } from '@/composables/useListDisplayMode'
 import FmDisplayModeToggle from '@/components/FmDisplayModeToggle.vue'
+import { useAppStore } from '@/stores/app'
 
 const router = useRouter()
 const { displayMode } = useListDisplayMode()
+const store = useAppStore()
 
-const items = ref([
-  { id: '1', title: '家庭提醒：老人体检', time: '今天 09:00', type: 'warning' as const },
-  { id: '2', title: '预算预警：餐饮已用 82%', time: '昨天', type: 'default' as const },
-  { id: '3', title: '行程出发前 1 小时', time: '周六 08:00', type: 'info' as const },
-])
+const items = computed(() =>
+  store.activities.map((a, idx) => ({
+    id: a.id,
+    title: a.text,
+    time: a.at,
+    type: (idx % 3 === 0 ? 'warning' : idx % 3 === 1 ? 'default' : 'info') as 'warning' | 'default' | 'info',
+  })),
+)
+
+onMounted(async () => {
+  try {
+    await store.syncMessages()
+  } catch {
+    // fallback to local mock
+  }
+})
 </script>
 
 <template>

@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { apiRequest } from '@/api/client'
 
 const LS_TOKEN = 'fm.auth.token'
 
@@ -8,9 +9,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthed = computed(() => Boolean(token.value))
 
-  function login(_account: string, _password: string) {
-    // 演示项目：不接后端，直接写入一个本地 token
-    token.value = `demo_${Date.now()}`
+  async function login(account: string, password: string) {
+    const data = await apiRequest<{ token: string }>('/auth/login', 'POST', { username: account, password })
+    token.value = data.token
     localStorage.setItem(LS_TOKEN, token.value)
   }
 
