@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ShieldCheckmarkOutline,
@@ -8,15 +9,33 @@ import {
   LogOutOutline,
 } from '@vicons/ionicons5'
 import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore, type FontMode, type ThemeMode } from '@/stores/settings'
 import { THEME_PRESETS, type ThemePresetKey } from '@/theme/presets'
 
 const router = useRouter()
 const store = useAppStore()
+const auth = useAuthStore()
 const settings = useSettingsStore()
+
+onMounted(async () => {
+  if (auth.isAuthed) {
+    try {
+      await auth.fetchMe()
+    } catch {
+      auth.logout()
+      router.replace({ name: 'login' })
+    }
+  }
+})
 
 function tip(msg: string) {
   alert(msg)
+}
+
+function logout() {
+  auth.logout()
+  router.replace({ name: 'login' })
 }
 
 const rows = [
@@ -63,10 +82,10 @@ function applyFont(v: FontMode) {
   <div class="app-shell page">
     <NCard class="glass profile" :bordered="false">
       <div class="head">
-        <NAvatar round :size="56" class="big">家</NAvatar>
+        <NAvatar round :size="56" class="big">{{ (auth.user?.displayName || auth.user?.username || '家').slice(0, 1) }}</NAvatar>
         <div>
-          <div class="name">幸福一家人</div>
-          <div class="subtle">家庭小管家 · 演示账号</div>
+          <div class="name">{{ auth.user?.displayName || '未登录' }}</div>
+          <div class="subtle">@{{ auth.user?.username || 'guest' }}</div>
         </div>
       </div>
       <NTag type="success" size="small" round style="margin-top: 12px">已登录</NTag>
@@ -153,9 +172,9 @@ function applyFont(v: FontMode) {
       </NList>
     </NCard>
 
-    <NButton class="logout" tertiary block @click="router.push({ name: 'home' })">
+    <NButton class="logout" tertiary block @click="logout">
       <NIcon :component="LogOutOutline" style="margin-right: 8px" />
-      返回首页
+      退出登录
     </NButton>
   </div>
 </template>

@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: all-powerful-backend
+  profiles:
+    active: dev
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    issuer: all-powerful
+    secret: ${APP_JWT_SECRET:ChangeThisToStrongSecretAtLeast32Bytes}
+    access-token-expire-seconds: 86400

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.allpowerful.backend.message.MessageQueryMapper">
+
+    <select id="listMessageRows" resultType="com.allpowerful.backend.message.MessageQueryMapper$MessageRow">
+        SELECT 'memo' AS sourceType,
+               m.id   AS sourceId,
+               m.title AS title,
+               COALESCE(m.content, '') AS content,
+               m.remind_at AS plannedAt
+        FROM memos m
+        WHERE m.user_id = #{userId}
+          AND m.remind_at IS NOT NULL
+
+        UNION ALL
+
+        SELECT 'trip' AS sourceType,
+               t.id   AS sourceId,
+               t.title AS title,
+               CONCAT(t.place, ' · ', t.category) AS content,
+               t.start_at AS plannedAt
+        FROM trips t
+        WHERE t.user_id = #{userId}
+
+        ORDER BY plannedAt ASC
+    </select>
+</mapper>

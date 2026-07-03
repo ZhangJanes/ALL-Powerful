@@ -3,7 +3,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080/api
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 export async function apiRequest<T>(path: string, method: HttpMethod = 'GET', body?: unknown): Promise<T> {
-  const token = localStorage.getItem('fm.auth.token') || ''
+  const token = localStorage.getItem('fm.auth.token') || sessionStorage.getItem('fm.auth.token') || ''
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
@@ -14,6 +14,9 @@ export async function apiRequest<T>(path: string, method: HttpMethod = 'GET', bo
   })
   const json = await res.json().catch(() => null)
   if (!res.ok || !json?.success) {
+    if (res.status === 403 && !json?.message) {
+      throw new Error('无权限访问，请确认后端已重启并重新登录')
+    }
     throw new Error(json?.message || `HTTP ${res.status}`)
   }
   return json.data as T
