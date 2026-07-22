@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Backend (spring-boot:run)" type="MavenRunConfiguration" factoryName="Maven">
+    <MavenSettings>
+      <option name="myGeneralSettings" />
+    </MavenSettings>
+    <option name="workingDir" value="$PROJECT_DIR$/Backend" />
+    <option name="goals" value="spring-boot:run -DskipTests" />
+    <option name="profiles">
+      <list />
+    </option>
+    <option name="resolveToWorkspace" value="false" />
+    <option name="projectsCmdEnabled" value="false" />
+    <method v="2" />
+  </configuration>
+</component>
