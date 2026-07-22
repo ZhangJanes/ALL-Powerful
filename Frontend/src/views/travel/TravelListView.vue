@@ -2,12 +2,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline, AddOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useTravelStore } from '@/stores/travel'
 import { useListDisplayMode, staggerDelay } from '@/composables/useListDisplayMode'
 import FmDisplayModeToggle from '@/components/FmDisplayModeToggle.vue'
 
 const router = useRouter()
-const store = useAppStore()
+const travelStore = useTravelStore()
 const { displayMode } = useListDisplayMode()
 const cat = ref('全部')
 const cats = ['全部', '周末出游', '旅行', '日常通勤', '回老家', '办事']
@@ -19,11 +19,11 @@ type DeadlineMeta = {
 }
 
 const upcoming = computed(() => {
-  let t = store.trips.filter((x) => !x.done)
+  let t = travelStore.trips.filter((x) => !x.done)
   if (cat.value !== '全部') t = t.filter((x) => x.category === cat.value)
   return t
 })
-const history = computed(() => store.trips.filter((t) => t.done))
+const history = computed(() => travelStore.trips.filter((t) => t.done))
 
 function parseTime(s?: string) {
   if (!s) return Number.NaN
@@ -59,7 +59,7 @@ function delayId(id: string, i: number, base: number) {
 
 onMounted(async () => {
   try {
-    await store.syncTrips()
+    await travelStore.syncTrips()
   } catch {
     // fallback to local mock
   }

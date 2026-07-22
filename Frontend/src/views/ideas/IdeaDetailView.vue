@@ -2,13 +2,13 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useIdeaStore } from '@/stores/idea'
 
 const route = useRoute()
 const router = useRouter()
-const store = useAppStore()
+const ideaStore = useIdeaStore()
 
-const idea = computed(() => store.ideas.find((i) => i.id === route.params.id))
+const idea = computed(() => ideaStore.ideas.find((i) => i.id === route.params.id))
 </script>
 
 <template>

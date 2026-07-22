@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAppStore } from '@/stores/app'
+import { useIdeaStore } from '@/stores/idea'
 import { useMessage } from 'naive-ui'
 
 const route = useRoute()
 const router = useRouter()
-const store = useAppStore()
+const ideaStore = useIdeaStore()
 const message = useMessage()
 
 const isNew = computed(() => route.name === 'ideas-new')
@@ -18,7 +18,7 @@ const category = ref('生活灵感')
 const tags = ref('')
 const starred = ref(false)
 
-const existing = computed(() => store.ideas.find((i) => i.id === id.value))
+const existing = computed(() => ideaStore.ideas.find((i) => i.id === id.value))
 
 watch(
   () => route.fullPath,
@@ -49,7 +49,7 @@ function save() {
     .map((s) => s.trim())
     .filter(Boolean)
   if (isNew.value) {
-    store.addIdea({
+    ideaStore.addIdea({
       title: title.value || '未命名灵感',
       body: body.value,
       category: category.value,

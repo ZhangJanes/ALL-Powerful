@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { lightTheme, NConfigProvider, useMessage } from 'naive-ui'
 import {
@@ -24,6 +24,18 @@ const account = ref('')
 const password = ref('')
 const remember = ref(true)
 const loading = ref(false)
+const now = ref(new Date())
+let clockTimer: ReturnType<typeof setInterval> | undefined
+
+onMounted(() => {
+  clockTimer = setInterval(() => {
+    now.value = new Date()
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (clockTimer) clearInterval(clockTimer)
+})
 
 const redirectTo = computed(() => {
   const raw = route.query.redirect
@@ -31,7 +43,7 @@ const redirectTo = computed(() => {
 })
 
 const greeting = computed(() => {
-  const h = new Date().getHours()
+  const h = now.value.getHours()
   if (h < 6) return '夜深了'
   if (h < 11) return '早上好'
   if (h < 14) return '中午好'
@@ -39,13 +51,22 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
+const timeLine = computed(() =>
+  new Intl.DateTimeFormat('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(now.value),
+)
+
 const dateLine = computed(() =>
   new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     weekday: 'long',
-  }).format(new Date()),
+  }).format(now.value),
 )
 
 const features = [
@@ -113,6 +134,7 @@ const fixedOverrides = {
 
             <div class="greeting-block">
               <div class="greeting">{{ greeting }}，欢迎回来</div>
+              <div class="time-line">{{ timeLine }}</div>
               <div class="date-line">{{ dateLine }}</div>
             </div>
 
@@ -328,8 +350,18 @@ const fixedOverrides = {
   color: rgba(15, 23, 42, 0.9);
 }
 
+.time-line {
+  margin-top: 10px;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(13, 148, 136, 0.92);
+  line-height: 1.1;
+}
+
 .date-line {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 13px;
   color: rgba(100, 116, 139, 0.92);
 }
@@ -501,6 +533,10 @@ const fixedOverrides = {
 
   .greeting {
     font-size: 20px;
+  }
+
+  .time-line {
+    font-size: 32px;
   }
 
   .title {

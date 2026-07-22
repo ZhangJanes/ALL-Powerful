@@ -2,13 +2,13 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useTravelStore } from '@/stores/travel'
 
 const route = useRoute()
 const router = useRouter()
-const store = useAppStore()
+const travelStore = useTravelStore()
 
-const trip = computed(() => store.trips.find((t) => t.id === route.params.id))
+const trip = computed(() => travelStore.trips.find((t) => t.id === route.params.id))
 
 function openMap() {
   alert('打开地图（演示）')

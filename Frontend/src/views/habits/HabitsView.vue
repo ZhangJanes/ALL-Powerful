@@ -2,16 +2,18 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline, AddOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useHabitStore } from '@/stores/habit'
+import { useHomeStore } from '@/stores/home'
 import { NHeatmap, useDialog, useMessage } from 'naive-ui'
 import type { HabitHeatmapPeriod } from '@/utils/habitHeatmap'
 import { buildHabitGoalHeatmap } from '@/utils/habitHeatmap'
 
 const router = useRouter()
-const store = useAppStore()
+const habitStore = useHabitStore()
+const homeStore = useHomeStore()
 
 const heatTab = ref<HabitHeatmapPeriod>('week')
-const habitHeat = computed(() => buildHabitGoalHeatmap(heatTab.value, store.habits))
+const habitHeat = computed(() => buildHabitGoalHeatmap(heatTab.value, habitStore.habits))
 
 const dialog = useDialog()
 const message = useMessage()
@@ -24,7 +26,7 @@ function onCheck(h: { id: string; name: string; doneToday: boolean }) {
     positiveText: '确认',
     negativeText: '取消',
     onPositiveClick: () => {
-      store.checkIn(h.id)
+      habitStore.checkIn(h.id)
       message.success('打卡成功')
     },
   })
@@ -67,9 +69,9 @@ function onCheck(h: { id: string; name: string; doneToday: boolean }) {
       </div>
     </NCard>
 
-    <NCard class="glass" :bordered="false" :title="`今日打卡（${store.habits.length}）`">
+    <NCard class="glass" :bordered="false" :title="`今日打卡（${habitStore.habits.length}）`">
       <NSpace vertical>
-        <NCard v-for="h in store.habits" :key="h.id" size="small" embedded class="habit" @click="router.push({ name: 'habits-detail', params: { id: h.id } })">
+        <NCard v-for="h in habitStore.habits" :key="h.id" size="small" embedded class="habit" @click="router.push({ name: 'habits-detail', params: { id: h.id } })">
           <div class="row">
             <div>
               <div class="name">{{ h.name }}</div>
@@ -85,7 +87,7 @@ function onCheck(h: { id: string; name: string; doneToday: boolean }) {
 
     <NCard class="glass" :bordered="false" title="我的成就">
       <NSpace>
-        <NTag v-for="a in store.achievements" :key="a" type="warning" round>{{ a }}</NTag>
+        <NTag v-for="a in homeStore.achievements" :key="a" type="warning" round>{{ a }}</NTag>
       </NSpace>
     </NCard>
   </div>

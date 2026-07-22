@@ -1,18 +1,11 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { apiRequest } from '@/api/client'
+import { fetchMeApi, loginApi, registerApi, type LoginResult } from '@/api/auth'
 
 const LS_TOKEN = 'fm.auth.token'
 const LS_USER = 'fm.auth.user'
 
 export type AuthUser = {
-  userId: number
-  username: string
-  displayName: string
-}
-
-type LoginResponse = {
-  token: string
   userId: number
   username: string
   displayName: string
@@ -39,7 +32,7 @@ function loadUser(): AuthUser | null {
   }
 }
 
-function persistAuth(data: LoginResponse, remember: boolean) {
+function persistAuth(data: LoginResult, remember: boolean) {
   clearAuthStorage()
   const storage = remember ? localStorage : sessionStorage
   storage.setItem(LS_TOKEN, data.token)
@@ -59,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthed = computed(() => Boolean(token.value))
 
-  function applyLogin(data: LoginResponse, remember = true) {
+  function applyLogin(data: LoginResult, remember = true) {
     token.value = data.token
     user.value = {
       userId: data.userId,
@@ -70,16 +63,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(account: string, password: string, remember = true) {
-    const data = await apiRequest<LoginResponse>('/auth/login', 'POST', {
-      username: account.trim(),
-      password,
-    })
+    const data = await loginApi({ username: account.trim(), password })
     applyLogin(data, remember)
     return data
   }
 
   async function register(username: string, password: string, displayName?: string, remember = true) {
-    const data = await apiRequest<LoginResponse>('/auth/register', 'POST', {
+    const data = await registerApi({
       username: username.trim(),
       password,
       displayName: displayName?.trim() || undefined,
@@ -89,7 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchMe() {
-    const data = await apiRequest<{ id: number; username: string; displayName: string }>('/auth/me')
+    const data = await fetchMeApi()
     user.value = {
       userId: data.id,
       username: data.username,

@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowBackOutline, AddOutline, SearchOutline, NotificationsOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { ArrowBackOutline, AddOutline, SearchOutline, NotificationsOutline, TrashOutline } from '@vicons/ionicons5'
+import { useMemoStore } from '@/stores/memo'
 import { useListDisplayMode, staggerDelay } from '@/composables/useListDisplayMode'
 import FmDisplayModeToggle from '@/components/FmDisplayModeToggle.vue'
+import { useDialog, useMessage } from 'naive-ui'
 
 const router = useRouter()
-const store = useAppStore()
+const memoStore = useMemoStore()
+const dialog = useDialog()
+const message = useMessage()
 const { displayMode } = useListDisplayMode()
 const q = ref('')
 const cat = ref('全部')
@@ -20,7 +23,7 @@ type DeadlineMeta = {
 }
 
 const filtered = computed(() => {
-  let list = store.memos
+  let list = memoStore.memos
   if (cat.value !== '全部') list = list.filter((m) => m.category === cat.value)
   if (q.value.trim()) {
     const k = q.value.trim()
@@ -58,14 +61,14 @@ const decorated = computed(() =>
 )
 
 const memoEmptyVariant = computed(() => {
-  if (store.memos.length && !filtered.value.length) {
+  if (memoStore.memos.length && !filtered.value.length) {
     if (q.value.trim() || cat.value !== '全部') return 'search' as const
   }
   return 'empty' as const
 })
 
 const memoEmptyDescription = computed(() => {
-  if (store.memos.length && !filtered.value.length && (q.value.trim() || cat.value !== '全部')) {
+  if (memoStore.memos.length && !filtered.value.length && (q.value.trim() || cat.value !== '全部')) {
     return '没有符合条件的笔记，试试调整分类或关键词'
   }
   return '暂无笔记，点击右上角 + 新增'
@@ -76,13 +79,35 @@ function preview(m: { content: string; todos?: { text: string }[] }) {
   return (m.content || '（无正文）').slice(0, 24)
 }
 
-onMounted(async () => {
-  try {
-    await store.syncMemos()
-  } catch {
-    // fallback to local mock
-  }
+onMounted(() => {
+  void loadMemos()
 })
+
+async function loadMemos() {
+  try {
+    await memoStore.syncMemos()
+  } catch {
+    message.error(memoStore.error || '加载失败，请确认已登录且后端已启动')
+  }
+}
+
+function confirmDelete(id: string, title: string, event: Event) {
+  event.stopPropagation()
+  dialog.warning({
+    title: '删除备忘录',
+    content: `确定删除「${title}」？此操作不可恢复。`,
+    positiveText: '删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await memoStore.deleteMemoFromServer(id)
+        message.success('已删除')
+      } catch (e) {
+        message.error(e instanceof Error ? e.message : '删除失败')
+      }
+    },
+  })
+}
 </script>
 
 <template>
@@ -120,7 +145,13 @@ onMounted(async () => {
       </NButton>
     </div>
 
-    <template v-if="decorated.length">
+    <NAlert v-if="memoStore.error" type="error" :title="memoStore.error" closable class="glass">
+      <NButton size="small" @click="loadMemos">重试</NButton>
+    </NAlert>
+
+    <NSpin v-if="memoStore.loading && !memoStore.loaded" description="加载中…" />
+
+    <template v-else-if="decorated.length">
       <NList v-if="displayMode === 'list'" class="glass list" bordered>
         <NListItem v-for="m in decorated" :key="m.id" @click="router.push({ name: 'memo-edit', params: { id: m.id } })">
           <NThing>
@@ -139,7 +170,12 @@ onMounted(async () => {
               <NAvatar style="background: rgba(13, 148, 136, 0.18); color: #ccfbf1">记</NAvatar>
             </template>
             <template #header-extra>
-              <NIcon v-if="m.remindAt" color="#fbbf24" :component="NotificationsOutline" />
+              <NSpace :size="4" align="center">
+                <NIcon v-if="m.remindAt" color="#fbbf24" :component="NotificationsOutline" />
+                <NButton quaternary circle size="tiny" @click="confirmDelete(m.id, m.title, $event)">
+                  <template #icon><NIcon :component="TrashOutline" /></template>
+                </NButton>
+              </NSpace>
             </template>
             <template #footer>
               <div v-if="m.deadline && m.remindAt" class="plan-time-row">
@@ -163,7 +199,12 @@ onMounted(async () => {
         >
           <div class="memo-card__top">
             <NAvatar style="background: rgba(13, 148, 136, 0.18); color: #ccfbf1">记</NAvatar>
-            <NIcon v-if="m.remindAt" color="#fbbf24" :component="NotificationsOutline" />
+            <NSpace :size="4" align="center">
+              <NIcon v-if="m.remindAt" color="#fbbf24" :component="NotificationsOutline" />
+              <NButton quaternary circle size="tiny" @click="confirmDelete(m.id, m.title, $event)">
+                <template #icon><NIcon :component="TrashOutline" /></template>
+              </NButton>
+            </NSpace>
           </div>
           <div class="memo-card__head">
             <span class="t">{{ m.title }}</span>
@@ -183,7 +224,7 @@ onMounted(async () => {
     </template>
     <FmEmptyIllustrated v-else :description="memoEmptyDescription" :variant="memoEmptyVariant" />
 
-    <div class="hint subtle">长按条目可扩展：编辑 / 删除 / 置顶（演示用菜单可后续接入）</div>
+    <div class="hint subtle">数据来自服务器，保存/删除会实时同步</div>
   </div>
 </template>
 

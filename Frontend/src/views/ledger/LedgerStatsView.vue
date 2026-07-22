@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useLedgerStore } from '@/stores/ledger'
 import FmChartBlock from '@/components/charts/FmChartBlock.vue'
 import {
   aggregateExpenseByDay,
@@ -12,10 +12,10 @@ import {
 } from '@/utils/chartOptions'
 
 const router = useRouter()
-const store = useAppStore()
+const ledgerStore = useLedgerStore()
 const range = ref('本月')
 
-const expenseSum = computed(() => store.ledger.filter((e) => e.type === 'expense').reduce((s, e) => s + e.amount, 0))
+const expenseSum = computed(() => ledgerStore.ledger.filter((e) => e.type === 'expense').reduce((s, e) => s + e.amount, 0))
 
 function tip(msg: string) {
   alert(msg)
@@ -23,7 +23,7 @@ function tip(msg: string) {
 
 const pie = computed(() => {
   const map = new Map<string, number>()
-  for (const e of store.ledger) {
+  for (const e of ledgerStore.ledger) {
     if (e.type !== 'expense') continue
     map.set(e.category, (map.get(e.category) || 0) + e.amount)
   }
@@ -31,7 +31,7 @@ const pie = computed(() => {
 })
 
 const lineOption = computed(() => {
-  const { categories, values } = aggregateExpenseByDay(store.ledger, 7)
+  const { categories, values } = aggregateExpenseByDay(ledgerStore.ledger, 7)
   return buildExpenseLineOption(categories, values)
 })
 
@@ -78,7 +78,7 @@ const barOption = computed(() => {
 
     <NCard class="glass" :bordered="false" title="明细">
       <NList bordered>
-        <NListItem v-for="e in store.ledger" :key="e.id">
+        <NListItem v-for="e in ledgerStore.ledger" :key="e.id">
           <NThing :title="`${e.category} · ${e.type === 'expense' ? '-' : '+'}¥${e.amount}`" :description="`${e.at} · ${e.note}`" />
         </NListItem>
       </NList>

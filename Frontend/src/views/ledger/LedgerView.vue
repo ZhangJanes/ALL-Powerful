@@ -2,11 +2,11 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline, AnalyticsOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useLedgerStore } from '@/stores/ledger'
 import { useMessage } from 'naive-ui'
 
 const router = useRouter()
-const store = useAppStore()
+const ledgerStore = useLedgerStore()
 const message = useMessage()
 
 const tab = ref<'expense' | 'income'>('expense')
@@ -42,7 +42,7 @@ function save() {
   const at = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(
     d.getHours(),
   ).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  store.addLedger({
+  ledgerStore.addLedger({
     type: tab.value,
     amount: n,
     category: category.value,

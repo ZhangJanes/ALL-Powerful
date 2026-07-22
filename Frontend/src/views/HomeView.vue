@@ -11,7 +11,11 @@ import {
   ReaderOutline,
   GridOutline,
 } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useMemoStore } from '@/stores/memo'
+import { useLedgerStore } from '@/stores/ledger'
+import { useHabitStore } from '@/stores/habit'
+import { useMessageStore } from '@/stores/message'
+import { useHomeStore } from '@/stores/home'
 import FmChartBlock from '@/components/charts/FmChartBlock.vue'
 import {
   aggregateExpenseByDay,
@@ -20,14 +24,18 @@ import {
 } from '@/utils/chartOptions'
 
 const router = useRouter()
-const store = useAppStore()
+const memoStore = useMemoStore()
+const ledgerStore = useLedgerStore()
+const habitStore = useHabitStore()
+const messageStore = useMessageStore()
+const homeStore = useHomeStore()
 
 const homeLineMixOption = computed(() => {
-  const { categories, values } = aggregateExpenseByDay(store.ledger, 7)
+  const { categories, values } = aggregateExpenseByDay(ledgerStore.ledger, 7)
   return buildExpenseLineBarOption(categories, values)
 })
 
-const homeBudgetRing = computed(() => buildBudgetRingOption(store.monthlySpent, store.monthlyBudget))
+const homeBudgetRing = computed(() => buildBudgetRingOption(ledgerStore.monthlySpent, ledgerStore.monthlyBudget))
 
 const shortcuts = [
   { label: '备忘录', name: 'memo', icon: DocumentTextOutline, color: '#14b8a6' },
@@ -50,12 +58,12 @@ const dateStr = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long
       <div class="hero-top">
         <div>
           <div class="date-line">{{ dateStr }} {{ weekday }}</div>
-          <div class="weather">{{ store.weather }}</div>
+          <div class="weather">{{ homeStore.weather }}</div>
         </div>
         <NAvatar round :size="44" class="avatar" @click="router.push({ name: 'profile' })">家</NAvatar>
       </div>
       <div class="todo-hint" @click="router.push({ name: 'memo' })">
-        今日待办：<NGradientText type="success">{{ store.todoProgress.done }}/{{ store.todoProgress.total }}</NGradientText> 件
+        今日待办：<NGradientText type="success">{{ memoStore.todoProgress.done }}/{{ memoStore.todoProgress.total }}</NGradientText> 件
       </div>
     </div>
 
@@ -63,23 +71,23 @@ const dateStr = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long
       <NGrid :cols="4" :x-gap="16" :y-gap="12">
         <NGridItem>
           <div class="mini" @click="router.push({ name: 'memo' })">
-            <NStatistic label="今日待办" :value="`${store.todoProgress.done}/${store.todoProgress.total}`" tabular-nums />
+            <NStatistic label="今日待办" :value="`${memoStore.todoProgress.done}/${memoStore.todoProgress.total}`" tabular-nums />
           </div>
         </NGridItem>
         <NGridItem>
           <div class="mini" @click="router.push({ name: 'ledger' })">
-            <NStatistic label="今日支出" :value="`¥${store.todayExpense}`" tabular-nums />
+            <NStatistic label="今日支出" :value="`¥${ledgerStore.todayExpense}`" tabular-nums />
           </div>
         </NGridItem>
         <NGridItem>
           <div class="mini" @click="router.push({ name: 'ledger-budget' })">
-            <NStatistic label="预算剩余" :value="`¥${store.budgetLeft}`" tabular-nums class="stat-tight" />
-            <div class="sub">/ ¥{{ store.monthlyBudget }}</div>
+            <NStatistic label="预算剩余" :value="`¥${ledgerStore.budgetLeft}`" tabular-nums class="stat-tight" />
+            <div class="sub">/ ¥{{ ledgerStore.monthlyBudget }}</div>
           </div>
         </NGridItem>
         <NGridItem>
           <div class="mini" @click="router.push({ name: 'habits' })">
-            <NStatistic label="今日打卡" :value="`${store.habitToday.done}/${store.habitToday.total}`" tabular-nums />
+            <NStatistic label="今日打卡" :value="`${habitStore.habitToday.done}/${habitStore.habitToday.total}`" tabular-nums />
           </div>
         </NGridItem>
       </NGrid>
@@ -116,8 +124,8 @@ const dateStr = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long
     </NCard>
 
     <NCard class="glass card-block" :bordered="false" size="small" title="最近动态">
-      <NList v-if="store.activities.length" clickable hoverable>
-        <NListItem v-for="a in store.activities.slice(0, 10)" :key="a.id">
+      <NList v-if="messageStore.activities.length" clickable hoverable>
+        <NListItem v-for="a in messageStore.activities.slice(0, 10)" :key="a.id">
           <div class="act">
             <div class="act-text">{{ a.text }}</div>
             <div class="act-time">{{ a.at }}</div>

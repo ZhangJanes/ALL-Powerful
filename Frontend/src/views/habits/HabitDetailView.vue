@@ -2,13 +2,13 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useHabitStore } from '@/stores/habit'
 
 const route = useRoute()
 const router = useRouter()
-const store = useAppStore()
+const habitStore = useHabitStore()
 
-const habit = computed(() => store.habits.find((h) => h.id === route.params.id))
+const habit = computed(() => habitStore.habits.find((h) => h.id === route.params.id))
 const rate = computed(() => (habit.value ? Math.round((habit.value.total / habit.value.targetDays) * 100) : 0))
 </script>
 

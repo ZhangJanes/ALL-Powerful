@@ -4,14 +4,14 @@ import { ArrowBackOutline } from '@vicons/ionicons5'
 import { useRouter } from 'vue-router'
 import { useListDisplayMode, staggerDelay } from '@/composables/useListDisplayMode'
 import FmDisplayModeToggle from '@/components/FmDisplayModeToggle.vue'
-import { useAppStore } from '@/stores/app'
+import { useMessageStore } from '@/stores/message'
 
 const router = useRouter()
 const { displayMode } = useListDisplayMode()
-const store = useAppStore()
+const messageStore = useMessageStore()
 
 const items = computed(() =>
-  store.activities.map((a, idx) => ({
+  messageStore.activities.map((a, idx) => ({
     id: a.id,
     title: a.text,
     time: a.at,
@@ -21,7 +21,7 @@ const items = computed(() =>
 
 onMounted(async () => {
   try {
-    await store.syncMessages()
+    await messageStore.syncMessages()
   } catch {
     // fallback to local mock
   }

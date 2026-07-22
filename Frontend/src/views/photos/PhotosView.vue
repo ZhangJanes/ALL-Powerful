@@ -2,20 +2,20 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline, LockClosedOutline, ImageOutline, AddOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { usePhotoStore } from '@/stores/photo'
 import { staggerDelay, useListDisplayMode } from '@/composables/useListDisplayMode'
 import { useMessage } from 'naive-ui'
 import FmDisplayModeToggle from '@/components/FmDisplayModeToggle.vue'
 
 const router = useRouter()
-const store = useAppStore()
+const photoStore = usePhotoStore()
 const message = useMessage()
 const { displayMode } = useListDisplayMode()
 
 const cats = ['全部', '证件照', '病历', '发票', '家庭照片', '工作文件']
 
 const viewMode = ref<'libraries' | 'library' | 'all-public'>('libraries')
-const selectedLibraryId = ref(store.publicLibraryId)
+const selectedLibraryId = ref(photoStore.publicLibraryId)
 const unlockedLibraries = ref<string[]>([])
 const unlockPassword = ref('')
 const viewCategory = ref('全部')
@@ -30,7 +30,7 @@ const previewModal = ref(false)
 
 const uploadName = ref('')
 const uploadCategory = ref('家庭照片')
-const uploadLibraryId = ref(store.publicLibraryId)
+const uploadLibraryId = ref(photoStore.publicLibraryId)
 const uploadLibraryPassword = ref('')
 const uploadPrivateUnlocked = ref(false)
 
@@ -40,36 +40,36 @@ const newLibraryPassword = ref('')
 const createUploadCategory = ref('家庭照片')
 const createUploadName = ref('')
 
-const selectedPhoto = ref<(typeof store.photos)[number] | null>(null)
+const selectedPhoto = ref<(typeof photoStore.photos)[number] | null>(null)
 
 const libraryOptions = computed(() =>
-  store.photoLibraries.map((x) => ({
+  photoStore.photoLibraries.map((x) => ({
     label: `${x.name}（${x.visibility === 'public' ? '可见' : '不可见'}）`,
     value: x.id,
   })),
 )
 
-const uploadTargetLibrary = computed(() => store.photoLibraries.find((x) => x.id === uploadLibraryId.value) || null)
+const uploadTargetLibrary = computed(() => photoStore.photoLibraries.find((x) => x.id === uploadLibraryId.value) || null)
 const uploadNeedsPassword = computed(() => uploadTargetLibrary.value?.visibility === 'private' && !uploadPrivateUnlocked.value)
-const currentLibrary = computed(() => store.photoLibraries.find((x) => x.id === selectedLibraryId.value) || null)
+const currentLibrary = computed(() => photoStore.photoLibraries.find((x) => x.id === selectedLibraryId.value) || null)
 const currentLibraryLocked = computed(() => {
   if (!currentLibrary.value || currentLibrary.value.visibility === 'public') return false
   return !unlockedLibraries.value.includes(currentLibrary.value.id)
 })
 
 const libraryCards = computed(() =>
-  store.photoLibraries.map((lib) => ({
+  photoStore.photoLibraries.map((lib) => ({
     ...lib,
-    total: store.photos.filter((p) => p.libraryId === lib.id).length,
-    previews: store.photos.filter((p) => p.libraryId === lib.id).slice(0, 8),
+    total: photoStore.photos.filter((p) => p.libraryId === lib.id).length,
+    previews: photoStore.photos.filter((p) => p.libraryId === lib.id).slice(0, 8),
   })),
 )
 
 const currentPhotos = computed(() => {
   let base =
     viewMode.value === 'all-public'
-      ? store.publicPhotos
-      : store.photos.filter((p) => p.libraryId === selectedLibraryId.value)
+      ? photoStore.publicPhotos
+      : photoStore.photos.filter((p) => p.libraryId === selectedLibraryId.value)
   if (viewCategory.value !== '全部') base = base.filter((p) => p.category === viewCategory.value)
   return base
 })
@@ -112,7 +112,7 @@ function backToLibraries() {
 function unlockCurrentLibrary() {
   if (!currentLibrary.value || currentLibrary.value.visibility !== 'private') return
   if (!unlockPassword.value.trim()) return message.warning('请输入库密码')
-  if (!store.verifyLibraryPassword(currentLibrary.value.id, unlockPassword.value.trim())) return message.error('密码错误')
+  if (!photoStore.verifyLibraryPassword(currentLibrary.value.id, unlockPassword.value.trim())) return message.error('密码错误')
   if (!unlockedLibraries.value.includes(currentLibrary.value.id)) unlockedLibraries.value.push(currentLibrary.value.id)
   unlockPassword.value = ''
   message.success('已解锁当前库')
@@ -137,7 +137,7 @@ function confirmCreateLibrary() {
   if (!newLibraryName.value.trim()) return message.warning('请填写库名称')
   if (newLibraryVisibility.value === 'private' && !newLibraryPassword.value.trim()) return message.warning('私有库必须设置密码')
   if (createSelectedFiles.value.length > 99) return message.warning('创建时单次最多上传 99 张')
-  const created = store.createPhotoLibrary({
+  const created = photoStore.createPhotoLibrary({
     name: newLibraryName.value,
     visibility: newLibraryVisibility.value,
     password: newLibraryVisibility.value === 'private' ? newLibraryPassword.value : undefined,
@@ -155,7 +155,7 @@ function confirmCreateLibrary() {
       at: nowYmd(),
       previewUrl: URL.createObjectURL(file),
     }))
-    store.photos.unshift(...createdPhotos)
+    photoStore.photos.unshift(...createdPhotos)
   }
 
   selectedLibraryId.value = created.id
@@ -172,7 +172,7 @@ function confirmCreateLibrary() {
 
 function pickUpload() {
   uploadModal.value = true
-  uploadLibraryId.value = store.publicLibraryId
+  uploadLibraryId.value = photoStore.publicLibraryId
   uploadPrivateUnlocked.value = false
   uploadLibraryPassword.value = ''
 }
@@ -191,7 +191,7 @@ function handleUploadFileChange(e: Event) {
 function verifyUploadLibraryPassword() {
   if (!uploadTargetLibrary.value || uploadTargetLibrary.value.visibility !== 'private') return
   if (!uploadLibraryPassword.value.trim()) return message.warning('请输入库密码')
-  if (!store.verifyLibraryPassword(uploadTargetLibrary.value.id, uploadLibraryPassword.value.trim())) return message.error('密码错误')
+  if (!photoStore.verifyLibraryPassword(uploadTargetLibrary.value.id, uploadLibraryPassword.value.trim())) return message.error('密码错误')
   uploadPrivateUnlocked.value = true
   message.success('密码校验通过')
 }
@@ -212,7 +212,7 @@ function confirmUpload() {
     at: nowYmd(),
     previewUrl: URL.createObjectURL(file),
   }))
-  store.photos.unshift(...createdPhotos)
+  photoStore.photos.unshift(...createdPhotos)
   uploadModal.value = false
   resetUploadForm()
   message.success(`上传成功，共 ${createdPhotos.length} 张`)
@@ -221,20 +221,20 @@ function confirmUpload() {
 function resetUploadForm() {
   uploadName.value = ''
   uploadCategory.value = '家庭照片'
-  uploadLibraryId.value = store.publicLibraryId
+  uploadLibraryId.value = photoStore.publicLibraryId
   uploadLibraryPassword.value = ''
   uploadPrivateUnlocked.value = false
   selectedFiles.value = []
 }
 
-function openPreview(p: (typeof store.photos)[number]) {
+function openPreview(p: (typeof photoStore.photos)[number]) {
   selectedPhoto.value = p
   previewModal.value = true
 }
 
 onMounted(async () => {
   try {
-    await store.syncPhotoLibrariesAndPhotos()
+    await photoStore.syncPhotoLibrariesAndPhotos()
   } catch {
     // fallback to local mock
   }

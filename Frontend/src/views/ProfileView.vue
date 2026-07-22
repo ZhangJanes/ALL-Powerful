@@ -8,13 +8,13 @@ import {
   ColorPaletteOutline,
   LogOutOutline,
 } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useHomeStore } from '@/stores/home'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore, type FontMode, type ThemeMode } from '@/stores/settings'
 import { THEME_PRESETS, type ThemePresetKey } from '@/theme/presets'
 
 const router = useRouter()
-const store = useAppStore()
+const homeStore = useHomeStore()
 const auth = useAuthStore()
 const settings = useSettingsStore()
 
@@ -93,7 +93,7 @@ function applyFont(v: FontMode) {
 
     <NCard class="glass block" :bordered="false" title="我的成就">
       <NSpace>
-        <NTag v-for="a in store.achievements" :key="a" type="warning" round>{{ a }}</NTag>
+        <NTag v-for="a in homeStore.achievements" :key="a" type="warning" round>{{ a }}</NTag>
       </NSpace>
     </NCard>
 

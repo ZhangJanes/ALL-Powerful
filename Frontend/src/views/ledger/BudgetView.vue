@@ -2,21 +2,21 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useLedgerStore } from '@/stores/ledger'
 import { useMessage } from 'naive-ui'
 import FmChartBlock from '@/components/charts/FmChartBlock.vue'
 import { buildBudgetRingOption } from '@/utils/chartOptions'
 
 const router = useRouter()
-const store = useAppStore()
+const ledgerStore = useLedgerStore()
 const message = useMessage()
 
-const total = ref(store.monthlyBudget)
+const total = ref(ledgerStore.monthlyBudget)
 
-const ringOption = computed(() => buildBudgetRingOption(store.monthlySpent, total.value))
+const ringOption = computed(() => buildBudgetRingOption(ledgerStore.monthlySpent, total.value))
 
 function save() {
-  store.monthlyBudget = total.value
+  ledgerStore.monthlyBudget = total.value
   message.success('预算已更新（演示）')
 }
 </script>
@@ -38,15 +38,15 @@ function save() {
         <template #prefix>¥</template>
       </NInputNumber>
       <NDescriptions bordered size="small" class="mt" :column="1">
-        <NDescriptionsItem label="本月已支出">¥{{ store.monthlySpent }}</NDescriptionsItem>
-        <NDescriptionsItem label="剩余">¥{{ Math.max(0, total - store.monthlySpent) }}</NDescriptionsItem>
+        <NDescriptionsItem label="本月已支出">¥{{ ledgerStore.monthlySpent }}</NDescriptionsItem>
+        <NDescriptionsItem label="剩余">¥{{ Math.max(0, total - ledgerStore.monthlySpent) }}</NDescriptionsItem>
       </NDescriptions>
     </NCard>
 
     <NCard class="glass" :bordered="false" title="超支提醒">
       <NSpace vertical>
         <NSwitch :default-value="true" /> 开启超支提醒（80% / 100%）
-        <NAlert v-if="store.monthlySpent / total >= 0.8" type="warning" title="接近预算上限" />
+        <NAlert v-if="ledgerStore.monthlySpent / total >= 0.8" type="warning" title="接近预算上限" />
       </NSpace>
     </NCard>
 

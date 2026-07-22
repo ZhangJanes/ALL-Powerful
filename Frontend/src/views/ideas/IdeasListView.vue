@@ -2,17 +2,17 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline, AddOutline, Star, StarOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useIdeaStore } from '@/stores/idea'
 import { useListDisplayMode, staggerDelay } from '@/composables/useListDisplayMode'
 import FmDisplayModeToggle from '@/components/FmDisplayModeToggle.vue'
 
 const router = useRouter()
-const store = useAppStore()
+const ideaStore = useIdeaStore()
 const { displayMode } = useListDisplayMode()
 const q = ref('')
 
 const list = computed(() => {
-  let xs = store.ideas
+  let xs = ideaStore.ideas
   const k = q.value.trim()
   if (k) xs = xs.filter((i) => i.title.includes(k) || i.body.includes(k) || i.tags.some((t) => t.includes(k)))
   return xs

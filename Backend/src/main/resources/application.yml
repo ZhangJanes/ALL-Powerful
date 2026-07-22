@@ -12,3 +12,6 @@ app:
     issuer: all-powerful
     secret: ${APP_JWT_SECRET:ChangeThisToStrongSecretAtLeast32Bytes}
     access-token-expire-seconds: 86400
+  kafka:
+    # 本地开发默认关闭；需要消息队列时再设为 true 并启动 Kafka
+    enabled: false

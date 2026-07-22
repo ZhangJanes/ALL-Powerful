@@ -2,11 +2,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
+import { useTravelStore } from '@/stores/travel'
 import { useMessage } from 'naive-ui'
 
 const router = useRouter()
-const store = useAppStore()
+const travelStore = useTravelStore()
 const message = useMessage()
 
 const title = ref('')
@@ -40,7 +40,7 @@ async function save() {
     message.warning('结束时间不能早于开始时间')
     return
   }
-  await store.saveTripToServer({
+  await travelStore.saveTripToServer({
     title: title.value,
     category: category.value,
     start: formatTsToDateTime(start.value),

@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { CheckmarkOutline } from '@vicons/ionicons5'
-import { useAppStore } from '@/stores/app'
-import { useMessage } from 'naive-ui'
+import { CheckmarkOutline, TrashOutline } from '@vicons/ionicons5'
+import { useMemoStore } from '@/stores/memo'
+import { useDialog, useMessage } from 'naive-ui'
 
 const route = useRoute()
 const router = useRouter()
-const store = useAppStore()
+const memoStore = useMemoStore()
 const message = useMessage()
+const dialog = useDialog()
+
+const saving = ref(false)
 
 const isNew = computed(() => route.name === 'memo-new')
 const id = computed(() => (route.params.id as string) || '')
@@ -20,7 +23,7 @@ const todoMode = ref(false)
 const todoLines = ref('')
 const remindAtTs = ref<number | null>(null)
 
-const existing = computed(() => store.memos.find((m) => m.id === id.value))
+const existing = computed(() => memoStore.memos.find((m) => m.id === id.value))
 
 function parseDateTimeToTs(input?: string) {
   if (!input) return null
@@ -69,7 +72,22 @@ watch(
   { immediate: true },
 )
 
+onMounted(async () => {
+  if (isNew.value) return
+  if (existing.value) return
+  try {
+    await memoStore.syncMemos()
+    if (!memoStore.memos.find((m) => m.id === id.value)) {
+      message.warning('备忘录不存在或已被删除')
+      router.replace({ name: 'memo' })
+    }
+  } catch (e) {
+    message.error(e instanceof Error ? e.message : '加载失败')
+  }
+})
+
 async function save() {
+  if (saving.value) return
   const todos = todoMode.value
     ? todoLines.value
         .split('\n')
@@ -82,29 +100,58 @@ async function save() {
         })
     : undefined
 
-  if (isNew.value) {
-    await store.saveMemoToServer({
+  saving.value = true
+  try {
+    if (isNew.value) {
+      await memoStore.saveMemoToServer({
+        title: title.value || '未命名',
+        content: todoMode.value ? '' : content.value,
+        category: category.value,
+        pinned: false,
+        remindAt: remindAtTs.value ? formatTsToDateTime(remindAtTs.value) : undefined,
+        todos,
+      })
+      message.success('已保存')
+      router.replace({ name: 'memo' })
+      return
+    }
+    await memoStore.saveMemoToServer({
       title: title.value || '未命名',
       content: todoMode.value ? '' : content.value,
       category: category.value,
-      pinned: false,
       remindAt: remindAtTs.value ? formatTsToDateTime(remindAtTs.value) : undefined,
+      pinned: existing.value?.pinned || false,
       todos,
-    })
+    }, id.value)
     message.success('已保存')
-    router.replace({ name: 'memo' })
-    return
+    router.back()
+  } catch (e) {
+    message.error(e instanceof Error ? e.message : '保存失败')
+  } finally {
+    saving.value = false
   }
-  await store.saveMemoToServer({
-    title: title.value || '未命名',
-    content: todoMode.value ? '' : content.value,
-    category: category.value,
-    remindAt: remindAtTs.value ? formatTsToDateTime(remindAtTs.value) : undefined,
-    pinned: existing.value?.pinned || false,
-    todos,
-  }, id.value)
-  message.success('已保存')
-  router.back()
+}
+
+function confirmDelete() {
+  if (isNew.value || !existing.value) return
+  dialog.warning({
+    title: '删除备忘录',
+    content: `确定删除「${existing.value.title}」？`,
+    positiveText: '删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      saving.value = true
+      try {
+        await memoStore.deleteMemoFromServer(id.value)
+        message.success('已删除')
+        router.replace({ name: 'memo' })
+      } catch (e) {
+        message.error(e instanceof Error ? e.message : '删除失败')
+      } finally {
+        saving.value = false
+      }
+    },
+  })
 }
 </script>
 
@@ -113,11 +160,16 @@ async function save() {
     <div class="nav glass">
       <NButton quaternary @click="router.back()">取消</NButton>
       <div class="page-title">{{ isNew ? '新建笔记' : '编辑笔记' }}</div>
-      <NButton type="primary" quaternary @click="save">
+      <NButton type="primary" quaternary :loading="saving" @click="save">
         <template #icon><NIcon :component="CheckmarkOutline" /></template>
         保存
       </NButton>
     </div>
+
+    <NButton v-if="!isNew" type="error" quaternary block :loading="saving" @click="confirmDelete">
+      <template #icon><NIcon :component="TrashOutline" /></template>
+      删除此笔记
+    </NButton>
 
     <NInput v-model:value="title" size="large" placeholder="请输入标题" />
 
@@ -145,8 +197,8 @@ async function save() {
     />
     <NInput v-else v-model:value="todoLines" type="textarea" placeholder="每行一条待办，前缀 x 表示已完成" :autosize="{ minRows: 10, maxRows: 22 }" />
 
-    <NAlert type="info" title="提醒" class="glass">
-      完整「重复提醒 / 富文本工具栏」可在对接后端后接入；此处聚焦结构与交互流。
+    <NAlert type="info" title="提示" class="glass">
+      笔记会保存到服务器；请确保已登录且后端运行在 8080 端口。
     </NAlert>
   </div>
 </template>
