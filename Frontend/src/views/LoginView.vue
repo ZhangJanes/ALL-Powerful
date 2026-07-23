@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { lightTheme, NConfigProvider, useMessage } from 'naive-ui'
 import {
@@ -14,18 +14,30 @@ import {
 import FmAntdIllustration from '@/components/illustrations/FmAntdIllustration.vue'
 import { useAuthStore } from '@/stores/auth'
 
+type AuthMode = 'login' | 'register'
+
 const router = useRouter()
 const route = useRoute()
 const message = useMessage()
 const auth = useAuthStore()
 
+const mode = ref<AuthMode>(route.name === 'register' ? 'register' : 'login')
 const account = ref('')
+const displayName = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const remember = ref(true)
 const loading = ref(false)
 const now = ref(new Date())
 let clockTimer: ReturnType<typeof setInterval> | undefined
 let featureTimer: ReturnType<typeof setInterval> | undefined
+
+watch(
+  () => route.name,
+  (name) => {
+    mode.value = name === 'register' ? 'register' : 'login'
+  },
+)
 
 onMounted(() => {
   clockTimer = setInterval(() => {
@@ -46,13 +58,12 @@ const redirectTo = computed(() => {
   return typeof raw === 'string' && raw.startsWith('/') ? raw : '/'
 })
 
+const isRegister = computed(() => mode.value === 'register')
+
 const greeting = computed(() => {
   const h = now.value.getHours()
-  if (h < 6) return '夜深了'
-  if (h < 11) return '早上好'
-  if (h < 14) return '中午好'
-  if (h < 18) return '下午好'
-  return '晚上好'
+  const base = h < 6 ? '夜深了' : h < 11 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好'
+  return isRegister.value ? `${base}，欢迎加入` : `${base}，欢迎回来`
 })
 
 const timeLine = computed(() =>
@@ -127,7 +138,15 @@ function jumpFeature(i: number) {
   featureIndex.value = i
 }
 
-async function submit() {
+function switchMode(next: AuthMode) {
+  if (mode.value === next) return
+  mode.value = next
+  password.value = ''
+  confirmPassword.value = ''
+  router.replace({ name: next, query: route.query })
+}
+
+async function submitLogin() {
   if (!account.value.trim() || !password.value.trim()) {
     message.warning('请输入账号和密码')
     return
@@ -144,8 +163,43 @@ async function submit() {
   }
 }
 
-function goRegister() {
-  router.push({ name: 'register', query: route.query })
+async function submitRegister() {
+  const name = account.value.trim()
+  if (!name) {
+    message.warning('请输入用户名')
+    return
+  }
+  if (name.length < 3) {
+    message.warning('用户名至少 3 个字符')
+    return
+  }
+  if (!password.value) {
+    message.warning('请输入密码')
+    return
+  }
+  if (password.value.length < 6) {
+    message.warning('密码至少 6 位')
+    return
+  }
+  if (password.value !== confirmPassword.value) {
+    message.warning('两次输入的密码不一致')
+    return
+  }
+  loading.value = true
+  try {
+    await auth.register(name, password.value, displayName.value, remember.value)
+    message.success('注册成功，已自动登录')
+    await router.replace(redirectTo.value)
+  } catch (e) {
+    message.error(e instanceof Error ? e.message : '注册失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+function submit() {
+  if (isRegister.value) return submitRegister()
+  return submitLogin()
 }
 
 const fixedOverrides = {
@@ -163,7 +217,7 @@ const fixedOverrides = {
 
 <template>
   <NConfigProvider :theme="lightTheme" :theme-overrides="fixedOverrides">
-    <div class="auth-page" data-page="login">
+    <div class="auth-page" :data-page="mode">
       <div class="bg" aria-hidden="true">
         <div class="bg-orb bg-orb--1" />
         <div class="bg-orb bg-orb--2" />
@@ -225,69 +279,116 @@ const fixedOverrides = {
           </div>
         </section>
 
-        <!-- 右侧登录表单 -->
+        <!-- 右侧表单：登录 / 注册切换 -->
         <section class="panel">
           <NCard class="card" :bordered="false">
-            <div class="card-head">
-              <div class="card-title">账号登录</div>
-              <div class="card-sub">使用已注册的用户名登录</div>
-            </div>
-
-            <div class="form">
-              <div class="field">
-                <div class="label">用户名</div>
-                <NInput
-                  v-model:value="account"
-                  placeholder="请输入用户名"
-                  size="large"
-                  clearable
-                >
-                  <template #prefix>
-                    <NIcon :component="PersonOutline" class="input-icon" />
-                  </template>
-                </NInput>
-              </div>
-
-              <div class="field">
-                <div class="label">密码</div>
-                <NInput
-                  v-model:value="password"
-                  type="password"
-                  show-password-on="click"
-                  placeholder="请输入密码"
-                  size="large"
-                  @keydown.enter.prevent="submit"
-                >
-                  <template #prefix>
-                    <NIcon :component="LockClosedOutline" class="input-icon" />
-                  </template>
-                </NInput>
-              </div>
-
-              <div class="row">
-                <NCheckbox v-model:checked="remember">记住我</NCheckbox>
-                <a class="link" href="javascript:void(0)" @click.prevent="message.info('请联系管理员重置密码')">
-                  忘记密码？
-                </a>
-              </div>
-
-              <NButton type="primary" size="large" block :loading="loading" @click="submit">
+            <div class="mode-tabs">
+              <button type="button" class="mode-tab" :class="{ active: !isRegister }" @click="switchMode('login')">
                 登录
-              </NButton>
-
-              <NDivider style="margin: 4px 0">或</NDivider>
-
-              <NButton size="large" block secondary @click="goRegister">创建新账号</NButton>
-
-              <div class="footer-row">
-                <span class="hint">还没有账号？</span>
-                <a class="link strong" href="javascript:void(0)" @click.prevent="goRegister">立即注册</a>
-              </div>
-
-              <NAlert type="info" :bordered="false" class="tip-alert">
-                首次使用请先注册账号。登录成功后，备忘录等数据将保存至服务端数据库。
-              </NAlert>
+              </button>
+              <button type="button" class="mode-tab" :class="{ active: isRegister }" @click="switchMode('register')">
+                注册
+              </button>
             </div>
+
+            <Transition name="fade-card" mode="out-in">
+              <div :key="mode" class="form-wrap">
+                <div class="card-head">
+                  <div class="card-title">{{ isRegister ? '创建账号' : '账号登录' }}</div>
+                  <div class="card-sub">
+                    {{ isRegister ? '注册后即可同步数据到云端' : '使用已注册的用户名登录' }}
+                  </div>
+                </div>
+
+                <div class="form">
+                  <div class="field">
+                    <div class="label">用户名</div>
+                    <NInput
+                      v-model:value="account"
+                      :placeholder="isRegister ? '3～64 个字符，用于登录' : '请输入用户名'"
+                      size="large"
+                      clearable
+                    >
+                      <template #prefix>
+                        <NIcon :component="PersonOutline" class="input-icon" />
+                      </template>
+                    </NInput>
+                  </div>
+
+                  <div v-if="isRegister" class="field">
+                    <div class="label">昵称（可选）</div>
+                    <NInput v-model:value="displayName" placeholder="显示名称，默认同用户名" size="large" clearable />
+                  </div>
+
+                  <div class="field">
+                    <div class="label">密码</div>
+                    <NInput
+                      v-model:value="password"
+                      type="password"
+                      show-password-on="click"
+                      :placeholder="isRegister ? '至少 6 位' : '请输入密码'"
+                      size="large"
+                      @keydown.enter.prevent="!isRegister && submit()"
+                    >
+                      <template #prefix>
+                        <NIcon :component="LockClosedOutline" class="input-icon" />
+                      </template>
+                    </NInput>
+                  </div>
+
+                  <div v-if="isRegister" class="field">
+                    <div class="label">确认密码</div>
+                    <NInput
+                      v-model:value="confirmPassword"
+                      type="password"
+                      show-password-on="click"
+                      placeholder="再次输入密码"
+                      size="large"
+                      @keydown.enter.prevent="submit"
+                    >
+                      <template #prefix>
+                        <NIcon :component="LockClosedOutline" class="input-icon" />
+                      </template>
+                    </NInput>
+                  </div>
+
+                  <div class="row">
+                    <NCheckbox v-model:checked="remember">记住我</NCheckbox>
+                    <a
+                      v-if="!isRegister"
+                      class="link"
+                      href="javascript:void(0)"
+                      @click.prevent="message.info('请联系管理员重置密码')"
+                    >
+                      忘记密码？
+                    </a>
+                  </div>
+
+                  <NButton type="primary" size="large" block :loading="loading" @click="submit">
+                    {{ isRegister ? '注册并登录' : '登录' }}
+                  </NButton>
+
+                  <div class="footer-row">
+                    <span class="hint">{{ isRegister ? '已有账号？' : '还没有账号？' }}</span>
+                    <a
+                      class="link strong"
+                      href="javascript:void(0)"
+                      @click.prevent="switchMode(isRegister ? 'login' : 'register')"
+                    >
+                      {{ isRegister ? '去登录' : '立即注册' }}
+                    </a>
+                  </div>
+
+                  <NAlert type="info" :bordered="false" class="tip-alert">
+                    {{
+                      isRegister
+                        ? '注册成功后将自动登录，备忘录等数据将保存至服务端数据库。'
+                        : '首次使用请先注册账号。登录成功后，备忘录等数据将保存至服务端数据库。'
+                    }}
+                  </NAlert>
+                </div>
+              </div>
+            </Transition>
           </NCard>
         </section>
       </div>
@@ -310,55 +411,57 @@ const fixedOverrides = {
   inset: 0;
   pointer-events: none;
   overflow: hidden;
+  /* 分区更清晰：左上冷蓝、右上浅青、底部暖白，减少发灰发虚 */
   background:
-    radial-gradient(980px 680px at 8% 12%, rgba(59, 130, 246, 0.24), transparent 66%),
-    radial-gradient(960px 700px at 92% 16%, rgba(139, 92, 246, 0.2), transparent 70%),
-    radial-gradient(880px 620px at 54% 88%, rgba(20, 184, 166, 0.18), transparent 66%),
-    linear-gradient(130deg, #f8fbff 0%, #f1f5ff 42%, #ecfaf8 75%, #f7f9fc 100%);
-  background-size: 140% 140%;
-  animation: aurora-pan 22s ease-in-out infinite alternate;
+    radial-gradient(900px 640px at 6% 8%, rgba(37, 99, 235, 0.22), transparent 58%),
+    radial-gradient(820px 580px at 94% 10%, rgba(20, 184, 166, 0.2), transparent 60%),
+    radial-gradient(760px 520px at 72% 92%, rgba(56, 189, 248, 0.14), transparent 62%),
+    radial-gradient(640px 480px at 18% 78%, rgba(99, 102, 241, 0.1), transparent 58%),
+    linear-gradient(155deg, #f4f8ff 0%, #eef7f5 48%, #f7f9fc 100%);
+  background-size: 130% 130%;
+  animation: aurora-pan 28s ease-in-out infinite alternate;
 }
 
 .bg-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(68px);
-  opacity: 0.34;
+  filter: blur(72px);
+  opacity: 0.28;
 }
 
 .bg-orb--1 {
-  width: 320px;
-  height: 320px;
-  top: -4%;
-  left: -2%;
-  background: rgba(56, 189, 248, 0.3);
-  animation: orb-float-1 26s ease-in-out infinite;
+  width: 300px;
+  height: 300px;
+  top: -6%;
+  left: -4%;
+  background: rgba(59, 130, 246, 0.34);
+  animation: orb-float-1 30s ease-in-out infinite;
 }
 
 .bg-orb--2 {
-  width: 280px;
-  height: 280px;
-  top: 60%;
-  left: 18%;
-  background: rgba(45, 212, 191, 0.24);
-  animation: orb-float-2 28s ease-in-out infinite;
+  width: 260px;
+  height: 260px;
+  top: 62%;
+  left: 22%;
+  background: rgba(45, 212, 191, 0.28);
+  animation: orb-float-2 32s ease-in-out infinite;
 }
 
 .bg-orb--3 {
-  width: 300px;
-  height: 300px;
-  top: 8%;
-  right: -2%;
-  background: rgba(167, 139, 250, 0.24);
-  animation: orb-float-3 24s ease-in-out infinite;
+  width: 280px;
+  height: 280px;
+  top: 6%;
+  right: -4%;
+  background: rgba(14, 165, 233, 0.26);
+  animation: orb-float-3 28s ease-in-out infinite;
 }
 
 @keyframes aurora-pan {
   0% {
-    background-position: 0% 18%;
+    background-position: 8% 20%;
   }
   100% {
-    background-position: 100% 82%;
+    background-position: 88% 78%;
   }
 }
 
@@ -438,13 +541,13 @@ const fixedOverrides = {
 .title {
   font-size: 26px;
   font-weight: 800;
-  color: rgba(15, 23, 42, 0.94);
+  color: rgba(15, 23, 42, 0.98);
   letter-spacing: 0.02em;
 }
 
 .tagline {
   font-size: 13px;
-  color: rgba(71, 85, 105, 0.82);
+  color: rgba(51, 65, 85, 0.88);
   margin-top: 4px;
 }
 
@@ -455,7 +558,7 @@ const fixedOverrides = {
 .greeting {
   font-size: 22px;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.9);
+  color: rgba(15, 23, 42, 0.95);
 }
 
 .time-line {
@@ -471,14 +574,14 @@ const fixedOverrides = {
 .date-line {
   margin-top: 8px;
   font-size: 13px;
-  color: rgba(100, 116, 139, 0.92);
+  color: rgba(71, 85, 105, 0.92);
 }
 
 .hero-desc {
   margin: 18px 0 0;
   font-size: 14px;
   line-height: 1.65;
-  color: rgba(51, 65, 85, 0.88);
+  color: rgba(30, 41, 59, 0.9);
 }
 
 .feature-carousel {
@@ -493,12 +596,12 @@ const fixedOverrides = {
   min-height: 162px;
   padding: 16px 16px 14px;
   border-radius: 16px;
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.28));
-  border: 1px solid rgba(255, 255, 255, 0.66);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.44));
+  border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow:
-    0 14px 28px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px) saturate(1.06);
+    0 14px 28px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(14px) saturate(1.04);
 }
 
 .feature-icon {
@@ -526,20 +629,20 @@ const fixedOverrides = {
   color: rgba(15, 23, 42, 0.9);
 }
 .feature-pill {
-  color: rgba(15, 23, 42, 0.78);
-  background: rgba(255, 255, 255, 0.52);
+  color: rgba(15, 23, 42, 0.86);
+  background: rgba(255, 255, 255, 0.62);
 }
 
 .feature-desc {
   margin-top: 4px;
   font-size: 12px;
-  color: rgba(71, 85, 105, 0.9);
+  color: rgba(51, 65, 85, 0.92);
   line-height: 1.45;
 }
 .feature-hint {
   margin-top: 8px;
   font-size: 12px;
-  color: rgba(51, 65, 85, 0.86);
+  color: rgba(30, 41, 59, 0.9);
   line-height: 1.45;
 }
 .feature-points {
@@ -550,11 +653,11 @@ const fixedOverrides = {
 }
 .point-chip {
   font-size: 11px;
-  color: rgba(51, 65, 85, 0.88);
+  color: rgba(30, 41, 59, 0.92);
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(148, 163, 184, 0.28);
 }
 .feature-dots {
   margin-top: 10px;
@@ -609,16 +712,50 @@ const fixedOverrides = {
 
 .card {
   border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.12);
   box-shadow:
-    0 24px 60px rgba(15, 23, 42, 0.12),
-    0 4px 16px rgba(15, 23, 42, 0.06);
-  backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.94);
+    0 24px 60px rgba(15, 23, 42, 0.15),
+    0 4px 16px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.97);
 }
 
 .card-head {
   margin-bottom: 4px;
+}
+
+.mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.mode-tab {
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(71, 85, 105, 0.92);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-tab.active {
+  background: #fff;
+  color: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.form-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .card-title {
@@ -630,7 +767,7 @@ const fixedOverrides = {
 .card-sub {
   margin-top: 4px;
   font-size: 13px;
-  color: rgba(100, 116, 139, 0.92);
+  color: rgba(71, 85, 105, 0.92);
 }
 
 .form {
@@ -642,7 +779,7 @@ const fixedOverrides = {
 .field .label {
   font-size: 12px;
   font-weight: 700;
-  color: rgba(51, 65, 85, 0.92);
+  color: rgba(30, 41, 59, 0.92);
   margin-bottom: 6px;
 }
 
