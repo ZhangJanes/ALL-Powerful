@@ -237,27 +237,31 @@ const fixedOverrides = {
             </div>
 
             <div class="greeting-block">
-              <div class="greeting">{{ greeting }}，欢迎回来</div>
+              <div class="greeting">{{ greeting }}</div>
               <div class="time-line">{{ timeLine }}</div>
               <div class="date-line">{{ dateLine }}</div>
             </div>
 
             <div class="feature-carousel">
               <Transition name="fade-card" mode="out-in">
-                <div :key="activeFeature.title" class="feature-card">
-                  <div class="feature-icon" :style="{ background: `${activeFeature.color}24`, color: activeFeature.color }">
-                    <NIcon :component="activeFeature.icon" :size="20" />
-                  </div>
-                  <div class="feature-body">
+                <div
+                  :key="activeFeature.title"
+                  class="feature-card"
+                  :style="{ '--accent': activeFeature.color }"
+                >
+                  <div class="feature-top">
+                    <div class="feature-icon">
+                      <NIcon :component="activeFeature.icon" :size="22" />
+                    </div>
                     <div class="feature-head">
                       <div class="feature-label">{{ activeFeature.title }}</div>
-                      <NTag size="small" :bordered="false" round class="feature-pill">{{ activeFeature.metric }}</NTag>
+                      <div class="feature-desc">{{ activeFeature.desc }}</div>
                     </div>
-                    <div class="feature-desc">{{ activeFeature.desc }}</div>
-                    <div class="feature-hint">{{ activeFeature.hint }}</div>
-                    <div class="feature-points">
-                      <span v-for="p in activeFeature.points" :key="p" class="point-chip">{{ p }}</span>
-                    </div>
+                    <span class="feature-pill">{{ activeFeature.metric }}</span>
+                  </div>
+                  <div class="feature-hint">{{ activeFeature.hint }}</div>
+                  <div class="feature-points">
+                    <span v-for="p in activeFeature.points" :key="p" class="point-chip">{{ p }}</span>
                   </div>
                 </div>
               </Transition>
@@ -411,22 +415,20 @@ const fixedOverrides = {
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  /* 分区更清晰：左上冷蓝、右上浅青、底部暖白，减少发灰发虚 */
+  /* 色块更干净：少灰雾，分区清楚 */
   background:
-    radial-gradient(900px 640px at 6% 8%, rgba(37, 99, 235, 0.22), transparent 58%),
-    radial-gradient(820px 580px at 94% 10%, rgba(20, 184, 166, 0.2), transparent 60%),
-    radial-gradient(760px 520px at 72% 92%, rgba(56, 189, 248, 0.14), transparent 62%),
-    radial-gradient(640px 480px at 18% 78%, rgba(99, 102, 241, 0.1), transparent 58%),
-    linear-gradient(155deg, #f4f8ff 0%, #eef7f5 48%, #f7f9fc 100%);
-  background-size: 130% 130%;
-  animation: aurora-pan 28s ease-in-out infinite alternate;
+    radial-gradient(720px 480px at 6% 8%, rgba(37, 99, 235, 0.12), transparent 58%),
+    radial-gradient(640px 440px at 94% 10%, rgba(13, 148, 136, 0.11), transparent 60%),
+    linear-gradient(165deg, #e8eef6 0%, #eef4f2 42%, #f5f7fa 100%);
+  background-size: 120% 120%;
+  animation: aurora-pan 32s ease-in-out infinite alternate;
 }
 
 .bg-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(72px);
-  opacity: 0.28;
+  filter: blur(64px);
+  opacity: 0.12;
 }
 
 .bg-orb--1 {
@@ -533,21 +535,21 @@ const fixedOverrides = {
   place-items: center;
   font-weight: 800;
   font-size: 22px;
-  color: #0f172a;
-  background: linear-gradient(135deg, rgba(20, 184, 166, 0.28), rgba(56, 189, 248, 0.22));
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+  color: #fff;
+  background: linear-gradient(135deg, #0d9488, #0284c7);
+  box-shadow: 0 10px 22px rgba(13, 148, 136, 0.28);
 }
 
 .title {
   font-size: 26px;
   font-weight: 800;
-  color: rgba(15, 23, 42, 0.98);
+  color: #0f172a;
   letter-spacing: 0.02em;
 }
 
 .tagline {
   font-size: 13px;
-  color: rgba(51, 65, 85, 0.88);
+  color: #64748b;
   margin-top: 4px;
 }
 
@@ -558,7 +560,7 @@ const fixedOverrides = {
 .greeting {
   font-size: 22px;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.95);
+  color: #0f172a;
 }
 
 .time-line {
@@ -567,14 +569,14 @@ const fixedOverrides = {
   font-weight: 800;
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
-  color: rgba(13, 148, 136, 0.92);
+  color: #0f766e;
   line-height: 1.1;
 }
 
 .date-line {
   margin-top: 8px;
   font-size: 13px;
-  color: rgba(71, 85, 105, 0.92);
+  color: #64748b;
 }
 
 .hero-desc {
@@ -586,99 +588,153 @@ const fixedOverrides = {
 
 .feature-carousel {
   margin-top: 24px;
-  max-width: 420px;
+  max-width: 440px;
 }
 
 .feature-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  min-height: 162px;
-  padding: 16px 16px 14px;
+  --accent: #0d9488;
+  position: relative;
+  min-height: 186px;
+  padding: 20px 20px 18px 22px;
   border-radius: 16px;
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.44));
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   box-shadow:
-    0 14px 28px rgba(15, 23, 42, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(14px) saturate(1.04);
+    0 14px 32px rgba(15, 23, 42, 0.1),
+    0 2px 8px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: var(--accent);
+}
+
+.feature-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--accent) 7%, transparent) 0%,
+    transparent 42%
+  );
+  pointer-events: none;
+}
+
+.feature-top {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
 }
 
 .feature-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  position: relative;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  color: #fff;
+  background: var(--accent);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 35%, transparent);
 }
-.feature-body {
-  min-width: 0;
-  width: 100%;
-}
+
 .feature-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  position: relative;
+  z-index: 1;
+  min-width: 0;
 }
 
 .feature-label {
-  font-size: 14px;
-  font-weight: 700;
-  color: rgba(15, 23, 42, 0.9);
-}
-.feature-pill {
-  color: rgba(15, 23, 42, 0.86);
-  background: rgba(255, 255, 255, 0.62);
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
 }
 
 .feature-desc {
   margin-top: 4px;
-  font-size: 12px;
-  color: rgba(51, 65, 85, 0.92);
+  font-size: 13px;
+  color: #475569;
   line-height: 1.45;
 }
+
+.feature-pill {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #fff;
+  background: var(--accent);
+}
+
 .feature-hint {
-  margin-top: 8px;
-  font-size: 12px;
-  color: rgba(30, 41, 59, 0.9);
-  line-height: 1.45;
+  position: relative;
+  z-index: 1;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.55;
 }
+
 .feature-points {
-  margin-top: 10px;
+  position: relative;
+  z-index: 1;
+  margin-top: 14px;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
+
 .point-chip {
-  font-size: 11px;
-  color: rgba(30, 41, 59, 0.92);
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(148, 163, 184, 0.28);
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  padding: 6px 11px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
+
 .feature-dots {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
 }
+
 .dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   border: 0;
-  background: rgba(100, 116, 139, 0.32);
+  background: #cbd5e1;
   transition: all 0.22s ease;
   cursor: pointer;
   padding: 0;
 }
+
 .dot.active {
-  width: 20px;
-  background: rgba(15, 118, 110, 0.92);
+  width: 22px;
+  background: #0f766e;
 }
 
 .fade-card-enter-active,
@@ -703,7 +759,6 @@ const fixedOverrides = {
 
 .hero-illustration {
   margin-top: 24px;
-  opacity: 0.92;
 }
 
 .panel {
@@ -712,12 +767,11 @@ const fixedOverrides = {
 
 .card {
   border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.1);
   box-shadow:
-    0 24px 60px rgba(15, 23, 42, 0.15),
-    0 4px 16px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.97);
+    0 18px 40px rgba(15, 23, 42, 0.1),
+    0 4px 12px rgba(15, 23, 42, 0.05);
+  background: #ffffff;
 }
 
 .card-head {
