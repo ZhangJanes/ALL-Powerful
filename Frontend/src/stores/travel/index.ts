@@ -11,6 +11,11 @@ export type Trip = {
   start: string
   end: string
   place: string
+  companions?: string
+  transport?: string
+  remark?: string
+  remindEnabled: boolean
+  remindMinutesBefore?: number
   done: boolean
   checklist: { id: string; text: string; done: boolean }[]
 }
@@ -24,6 +29,11 @@ export const useTravelStore = defineStore('travel', () => {
       start: '2026-03-22 09:00',
       end: '2026-03-22 16:00',
       place: '城市中央公园',
+      companions: '我、孩子',
+      transport: '自驾',
+      remark: '带雨伞',
+      remindEnabled: true,
+      remindMinutesBefore: 60,
       done: false,
       checklist: [
         { id: 'c1', text: '零食', done: false },
@@ -37,6 +47,10 @@ export const useTravelStore = defineStore('travel', () => {
       start: '2026-02-10 10:00',
       end: '2026-02-10 18:00',
       place: '近郊生态农庄',
+      companions: '',
+      transport: '自驾',
+      remark: '',
+      remindEnabled: false,
       done: true,
       checklist: [],
     },
@@ -56,6 +70,11 @@ export const useTravelStore = defineStore('travel', () => {
       start: String(x.startAt).replace('T', ' '),
       end: String(x.endAt).replace('T', ' '),
       place: x.place,
+      companions: x.companions || '',
+      transport: x.transport || '',
+      remark: x.remark || '',
+      remindEnabled: Boolean(x.remindEnabled),
+      remindMinutesBefore: x.remindMinutesBefore ? Number(x.remindMinutesBefore) : undefined,
       done: Boolean(x.done),
       checklist: (x.checklist || []).map((c) => ({ id: String(c.id), text: c.text, done: Boolean(c.done) })),
     }))
@@ -68,6 +87,11 @@ export const useTravelStore = defineStore('travel', () => {
       startAt: input.start.replace(' ', 'T'),
       endAt: input.end.replace(' ', 'T'),
       place: input.place,
+      companions: input.companions || '',
+      transport: input.transport || '',
+      remark: input.remark || '',
+      remindEnabled: Boolean(input.remindEnabled),
+      remindMinutesBefore: input.remindMinutesBefore,
       done: input.done,
       checklist: (input.checklist || []).map((c) => ({ text: c.text, done: c.done })),
     }

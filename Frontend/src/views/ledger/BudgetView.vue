@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
 import { useLedgerStore } from '@/stores/ledger'
@@ -15,10 +15,15 @@ const total = ref(ledgerStore.monthlyBudget)
 
 const ringOption = computed(() => buildBudgetRingOption(ledgerStore.monthlySpent, total.value))
 
-function save() {
-  ledgerStore.monthlyBudget = total.value
-  message.success('预算已更新（演示）')
+async function save() {
+  await ledgerStore.saveBudget(Number(total.value || 0))
+  message.success('预算已更新')
 }
+
+onMounted(async () => {
+  await ledgerStore.refreshBudget()
+  total.value = ledgerStore.monthlyBudget
+})
 </script>
 
 <template>

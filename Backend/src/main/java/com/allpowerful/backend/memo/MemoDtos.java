@@ -14,6 +14,7 @@ public class MemoDtos {
             @NotBlank String category,
             @NotNull Boolean pinned,
             LocalDateTime remindAt,
+            String remindRepeat,
             List<TodoItem> todos
     ) {}
     public record MemoResponse(
@@ -23,6 +24,7 @@ public class MemoDtos {
             String category,
             Boolean pinned,
             LocalDateTime remindAt,
+            String remindRepeat,
             LocalDateTime updatedAt,
             List<TodoItem> todos
     ) {}

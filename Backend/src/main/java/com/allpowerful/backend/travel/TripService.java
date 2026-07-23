@@ -52,6 +52,11 @@ public class TripService {
         trip.setStartAt(req.startAt());
         trip.setEndAt(req.endAt());
         trip.setPlace(req.place());
+        trip.setCompanions(req.companions());
+        trip.setTransport(req.transport());
+        trip.setRemark(req.remark());
+        trip.setRemindEnabled(req.remindEnabled());
+        trip.setRemindMinutesBefore(req.remindMinutesBefore());
         trip.setDone(req.done());
         trip.getChecklist().clear();
         if (req.checklist() != null) {
@@ -78,6 +83,11 @@ public class TripService {
                 trip.getStartAt(),
                 trip.getEndAt(),
                 trip.getPlace(),
+                trip.getCompanions(),
+                trip.getTransport(),
+                trip.getRemark(),
+                trip.getRemindEnabled(),
+                trip.getRemindMinutesBefore(),
                 trip.getDone(),
                 items
         );

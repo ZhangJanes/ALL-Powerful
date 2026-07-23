@@ -9,7 +9,6 @@ import {
   ImagesOutline,
   LockClosedOutline,
   PersonOutline,
-  ShieldCheckmarkOutline,
   WalletOutline,
 } from '@vicons/ionicons5'
 import FmAntdIllustration from '@/components/illustrations/FmAntdIllustration.vue'
@@ -26,15 +25,20 @@ const remember = ref(true)
 const loading = ref(false)
 const now = ref(new Date())
 let clockTimer: ReturnType<typeof setInterval> | undefined
+let featureTimer: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
   clockTimer = setInterval(() => {
     now.value = new Date()
   }, 1000)
+  featureTimer = setInterval(() => {
+    featureIndex.value = (featureIndex.value + 1) % featureCards.length
+  }, 4200)
 })
 
 onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer)
+  if (featureTimer) clearInterval(featureTimer)
 })
 
 const redirectTo = computed(() => {
@@ -69,13 +73,59 @@ const dateLine = computed(() =>
   }).format(now.value),
 )
 
-const features = [
-  { icon: DocumentTextOutline, label: '备忘录', desc: '待办提醒 · 云端同步', color: '#14b8a6' },
-  { icon: WalletOutline, label: '家庭记账', desc: '收支统计 · 预算管理', color: '#f472b6' },
-  { icon: CheckboxOutline, label: '习惯打卡', desc: '坚持记录 · 成就激励', color: '#34d399' },
-  { icon: AirplaneOutline, label: '出行计划', desc: '行程清单 · 一键备忘', color: '#f97316' },
-  { icon: ImagesOutline, label: '照片库', desc: '分类归档 · 私密保护', color: '#0d9488' },
+const featureCards = [
+  {
+    icon: DocumentTextOutline,
+    title: '备忘录',
+    desc: '待办提醒 · 云端同步',
+    hint: '支持分类、提醒与快捷记录',
+    metric: '今日清单可视化',
+    points: ['提醒时间管理', '待办完成进度', '快速新增'],
+    color: '#14b8a6',
+  },
+  {
+    icon: WalletOutline,
+    title: '家庭记账',
+    desc: '收支统计 · 预算管理',
+    hint: '每月预算进度一目了然',
+    metric: '预算阈值提醒',
+    points: ['日/周/月统计', '分类占比分析', '导出复盘'],
+    color: '#4f46e5',
+  },
+  {
+    icon: CheckboxOutline,
+    title: '习惯打卡',
+    desc: '坚持记录 · 成就激励',
+    hint: '每日打卡与补卡能力',
+    metric: '连续天数追踪',
+    points: ['打卡日历', '补卡次数控制', '成就解锁'],
+    color: '#0ea5e9',
+  },
+  {
+    icon: AirplaneOutline,
+    title: '出行计划',
+    desc: '行程清单 · 一键备忘',
+    hint: '出发前提醒，避免遗忘',
+    metric: '待办与行程联动',
+    points: ['清单管理', '行程倒计时', '历史归档'],
+    color: '#f97316',
+  },
+  {
+    icon: ImagesOutline,
+    title: '照片库',
+    desc: '分类归档 · 私密保护',
+    hint: '证件、发票、病历安全管理',
+    metric: '敏感文件保护',
+    points: ['分类检索', '隐私访问控制', '资料可追溯'],
+    color: '#0891b2',
+  },
 ] as const
+const featureIndex = ref(0)
+const activeFeature = computed(() => featureCards[featureIndex.value])
+
+function jumpFeature(i: number) {
+  featureIndex.value = i
+}
 
 async function submit() {
   if (!account.value.trim() || !password.value.trim()) {
@@ -138,29 +188,35 @@ const fixedOverrides = {
               <div class="date-line">{{ dateLine }}</div>
             </div>
 
-            <p class="hero-desc">
-              登录后可将备忘录、出行计划等数据同步至云端，多设备随时查看，家庭协作更省心。
-            </p>
-
-            <div class="feature-grid">
-              <div v-for="f in features" :key="f.label" class="feature-item">
-                <div class="feature-icon" :style="{ background: `${f.color}18`, color: f.color }">
-                  <NIcon :component="f.icon" :size="20" />
+            <div class="feature-carousel">
+              <Transition name="fade-card" mode="out-in">
+                <div :key="activeFeature.title" class="feature-card">
+                  <div class="feature-icon" :style="{ background: `${activeFeature.color}24`, color: activeFeature.color }">
+                    <NIcon :component="activeFeature.icon" :size="20" />
+                  </div>
+                  <div class="feature-body">
+                    <div class="feature-head">
+                      <div class="feature-label">{{ activeFeature.title }}</div>
+                      <NTag size="small" :bordered="false" round class="feature-pill">{{ activeFeature.metric }}</NTag>
+                    </div>
+                    <div class="feature-desc">{{ activeFeature.desc }}</div>
+                    <div class="feature-hint">{{ activeFeature.hint }}</div>
+                    <div class="feature-points">
+                      <span v-for="p in activeFeature.points" :key="p" class="point-chip">{{ p }}</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div class="feature-label">{{ f.label }}</div>
-                  <div class="feature-desc">{{ f.desc }}</div>
-                </div>
+              </Transition>
+              <div class="feature-dots">
+                <button
+                  v-for="(item, idx) in featureCards"
+                  :key="item.title"
+                  class="dot"
+                  :class="{ active: idx === featureIndex }"
+                  type="button"
+                  @click="jumpFeature(idx)"
+                />
               </div>
-            </div>
-
-            <div class="trust-row">
-              <NTag size="small" round :bordered="false" type="success">
-                <template #icon><NIcon :component="ShieldCheckmarkOutline" /></template>
-                JWT 安全鉴权
-              </NTag>
-              <NTag size="small" round :bordered="false">MySQL 持久化</NTag>
-              <NTag size="small" round :bordered="false">多端同步</NTag>
             </div>
 
             <div class="hero-illustration">
@@ -253,42 +309,94 @@ const fixedOverrides = {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  overflow: hidden;
   background:
-    radial-gradient(1200px 680px at 12% 18%, rgba(14, 165, 233, 0.2), transparent 55%),
-    radial-gradient(900px 620px at 88% 22%, rgba(99, 102, 241, 0.16), transparent 58%),
-    radial-gradient(800px 560px at 50% 95%, rgba(13, 148, 136, 0.12), transparent 55%),
-    linear-gradient(165deg, #f7fbff 0%, #f0f4fa 45%, #f6f8fc 100%);
+    radial-gradient(980px 680px at 8% 12%, rgba(59, 130, 246, 0.24), transparent 66%),
+    radial-gradient(960px 700px at 92% 16%, rgba(139, 92, 246, 0.2), transparent 70%),
+    radial-gradient(880px 620px at 54% 88%, rgba(20, 184, 166, 0.18), transparent 66%),
+    linear-gradient(130deg, #f8fbff 0%, #f1f5ff 42%, #ecfaf8 75%, #f7f9fc 100%);
+  background-size: 140% 140%;
+  animation: aurora-pan 22s ease-in-out infinite alternate;
 }
 
 .bg-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.45;
+  filter: blur(68px);
+  opacity: 0.34;
 }
 
 .bg-orb--1 {
-  width: 280px;
-  height: 280px;
-  top: 8%;
-  left: 6%;
-  background: rgba(20, 184, 166, 0.35);
+  width: 320px;
+  height: 320px;
+  top: -4%;
+  left: -2%;
+  background: rgba(56, 189, 248, 0.3);
+  animation: orb-float-1 26s ease-in-out infinite;
 }
 
 .bg-orb--2 {
-  width: 220px;
-  height: 220px;
-  top: 55%;
-  left: 28%;
-  background: rgba(56, 189, 248, 0.28);
+  width: 280px;
+  height: 280px;
+  top: 60%;
+  left: 18%;
+  background: rgba(45, 212, 191, 0.24);
+  animation: orb-float-2 28s ease-in-out infinite;
 }
 
 .bg-orb--3 {
-  width: 260px;
-  height: 260px;
-  top: 20%;
-  right: 8%;
-  background: rgba(129, 140, 248, 0.22);
+  width: 300px;
+  height: 300px;
+  top: 8%;
+  right: -2%;
+  background: rgba(167, 139, 250, 0.24);
+  animation: orb-float-3 24s ease-in-out infinite;
+}
+
+@keyframes aurora-pan {
+  0% {
+    background-position: 0% 18%;
+  }
+  100% {
+    background-position: 100% 82%;
+  }
+}
+
+@keyframes orb-float-1 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(42px, 20px, 0) scale(1.12);
+  }
+}
+
+@keyframes orb-float-2 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-36px, -26px, 0) scale(1.08);
+  }
+}
+
+@keyframes orb-float-3 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-24px, 34px, 0) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg,
+  .bg-orb {
+    animation: none !important;
+  }
 }
 
 .shell {
@@ -373,22 +481,24 @@ const fixedOverrides = {
   color: rgba(51, 65, 85, 0.88);
 }
 
-.feature-grid {
+.feature-carousel {
   margin-top: 24px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  max-width: 420px;
 }
 
-.feature-item {
+.feature-card {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  backdrop-filter: blur(8px);
+  gap: 12px;
+  min-height: 162px;
+  padding: 16px 16px 14px;
+  border-radius: 16px;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.28));
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  box-shadow:
+    0 14px 28px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px) saturate(1.06);
 }
 
 .feature-icon {
@@ -399,18 +509,86 @@ const fixedOverrides = {
   place-items: center;
   flex-shrink: 0;
 }
+.feature-body {
+  min-width: 0;
+  width: 100%;
+}
+.feature-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 
 .feature-label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: rgba(15, 23, 42, 0.9);
 }
+.feature-pill {
+  color: rgba(15, 23, 42, 0.78);
+  background: rgba(255, 255, 255, 0.52);
+}
 
 .feature-desc {
-  margin-top: 2px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(71, 85, 105, 0.9);
+  line-height: 1.45;
+}
+.feature-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(51, 65, 85, 0.86);
+  line-height: 1.45;
+}
+.feature-points {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.point-chip {
   font-size: 11px;
-  color: rgba(100, 116, 139, 0.9);
-  line-height: 1.35;
+  color: rgba(51, 65, 85, 0.88);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.feature-dots {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(100, 116, 139, 0.32);
+  transition: all 0.22s ease;
+  cursor: pointer;
+  padding: 0;
+}
+.dot.active {
+  width: 20px;
+  background: rgba(15, 118, 110, 0.92);
+}
+
+.fade-card-enter-active,
+.fade-card-leave-active {
+  transition: opacity 0.42s ease, transform 0.42s ease;
+}
+.fade-card-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.fade-card-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .trust-row {
@@ -527,8 +705,8 @@ const fixedOverrides = {
     display: none;
   }
 
-  .feature-grid {
-    grid-template-columns: 1fr;
+  .feature-carousel {
+    max-width: none;
   }
 
   .greeting {

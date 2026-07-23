@@ -1,0 +1,24 @@
+---
+description: ALL-Powerful 前端（Vue/Vite）约定
+globs: Frontend/**/*.{ts,vue,css}
+alwaysApply: false
+---
+
+# 前端约定
+
+- 别名：`@` → `src/`（不是 `/@`）
+- HTTP：只用 `src/api/request.ts` 的 `request/get/post/put/del`；业务封装放 `src/api/<域>/index.ts`
+- Token：`fm.auth.token`；登录等设 `withAuth: false`
+- 响应：后端 `success === false` 已在拦截器 reject，store/页面处理 Error.message 即可
+- 路由：`src/router/index.ts`；公开页设 `meta.public`；新页同步侧栏 `MainLayout.vue`（如需要）
+- Store：按域放 `src/stores/<域>/`；主题在 `stores/settings` + `theme/`
+- UI：沿用 Naive UI + 现有 `theme/`、`styles/`，勿引入另一套组件库
+- 已接 API：auth / memo / travel / photo / message / settings；ledger、habits、ideas、guide 仍偏本地/静态
+
+```ts
+// ✅
+import { get } from '@/api/request'
+await get('/memos')
+
+// ❌ 页面里直接 axios.create
+```

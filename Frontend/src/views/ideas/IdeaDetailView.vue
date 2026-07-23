@@ -3,12 +3,26 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
 import { useIdeaStore } from '@/stores/idea'
+import { useMessage } from 'naive-ui'
 
 const route = useRoute()
 const router = useRouter()
 const ideaStore = useIdeaStore()
+const message = useMessage()
 
 const idea = computed(() => ideaStore.ideas.find((i) => i.id === route.params.id))
+
+async function remove() {
+  if (!idea.value) return
+  await ideaStore.removeIdea(idea.value.id)
+  message.success('已移至回收站')
+  router.replace({ name: 'ideas' })
+}
+
+async function toggleStar() {
+  if (!idea.value) return
+  await ideaStore.toggleStar(idea.value.id)
+}
 </script>
 
 <template>
@@ -18,7 +32,11 @@ const idea = computed(() => ideaStore.ideas.find((i) => i.id === route.params.id
         <template #icon><NIcon :component="ArrowBackOutline" /></template>
       </NButton>
       <div class="page-title">详情</div>
-      <NButton size="tiny" secondary @click="router.push({ name: 'ideas-edit', params: { id: idea.id } })">编辑</NButton>
+      <NSpace>
+        <NButton size="tiny" secondary @click="toggleStar">{{ idea.starred ? '取消收藏' : '收藏' }}</NButton>
+        <NButton size="tiny" secondary @click="router.push({ name: 'ideas-edit', params: { id: idea.id } })">编辑</NButton>
+        <NButton size="tiny" tertiary @click="remove">删除</NButton>
+      </NSpace>
     </div>
 
     <NCard class="glass" :bordered="false" :title="idea.title">

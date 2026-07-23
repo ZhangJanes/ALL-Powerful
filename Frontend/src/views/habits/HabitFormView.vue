@@ -3,18 +3,21 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
 import { useMessage } from 'naive-ui'
+import { useHabitStore } from '@/stores/habit'
 
 const router = useRouter()
 const message = useMessage()
+const habitStore = useHabitStore()
 const name = ref('')
 const days = ref(30)
 
-function save() {
+async function save() {
   if (!name.value.trim()) {
     message.warning('请输入任务名称')
     return
   }
-  message.info('演示：创建任务已省略持久化，可接入 Pinia 扩展')
+  await habitStore.createHabit(name.value.trim(), Number(days.value || 30))
+  message.success('任务已创建')
   router.back()
 }
 </script>

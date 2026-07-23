@@ -12,6 +12,11 @@ const message = useMessage()
 const title = ref('')
 const category = ref('周末出游')
 const place = ref('')
+const companions = ref('')
+const transport = ref('自驾')
+const remark = ref('')
+const remindEnabled = ref(false)
+const remindMinutesBefore = ref<number | null>(60)
 const now = Date.now()
 const start = ref<number | null>(now)
 const end = ref<number | null>(now + 60 * 60 * 1000)
@@ -46,6 +51,11 @@ async function save() {
     start: formatTsToDateTime(start.value),
     end: formatTsToDateTime(end.value),
     place: place.value,
+    companions: companions.value,
+    transport: transport.value,
+    remark: remark.value,
+    remindEnabled: remindEnabled.value,
+    remindMinutesBefore: remindEnabled.value ? (remindMinutesBefore.value || 60) : undefined,
     done: false,
     checklist: [],
   })
@@ -94,6 +104,26 @@ async function save() {
       </NFormItem>
       <NFormItem label="地点">
         <NInput v-model:value="place" placeholder="可关联地图（演示）" />
+      </NFormItem>
+      <NFormItem label="同行人物">
+        <NInput v-model:value="companions" placeholder="如：家人、朋友" />
+      </NFormItem>
+      <NFormItem label="交通方式">
+        <NSelect
+          v-model:value="transport"
+          :options="['步行', '公交', '地铁', '自驾', '高铁', '飞机'].map((v) => ({ label: v, value: v }))"
+        />
+      </NFormItem>
+      <NFormItem label="备注">
+        <NInput v-model:value="remark" placeholder="如：带身份证、雨伞" />
+      </NFormItem>
+      <NFormItem label="出发前提醒">
+        <NSpace align="center">
+          <NSwitch v-model:value="remindEnabled" />
+          <NInputNumber v-if="remindEnabled" v-model:value="remindMinutesBefore" :min="1" :max="1440">
+            <template #suffix>分钟</template>
+          </NInputNumber>
+        </NSpace>
       </NFormItem>
     </NForm>
   </div>

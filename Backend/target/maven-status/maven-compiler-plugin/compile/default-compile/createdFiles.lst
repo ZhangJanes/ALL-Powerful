@@ -1,0 +1,7 @@
+com/allpowerful/backend/settings/SettingsDtos$SettingsUpdateRequest.class
+com/allpowerful/backend/settings/SettingsDtos$SettingsResponse.class
+com/allpowerful/backend/settings/SettingsDtos.class
+com/allpowerful/backend/settings/UserSettingsRepository.class
+com/allpowerful/backend/settings/SettingsService.class
+com/allpowerful/backend/settings/SettingsController.class
+com/allpowerful/backend/settings/UserSettings.class

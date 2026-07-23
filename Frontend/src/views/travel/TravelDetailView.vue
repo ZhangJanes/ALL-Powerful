@@ -35,6 +35,12 @@ function openMap() {
             <NButton size="tiny" secondary @click="openMap">地图</NButton>
           </NSpace>
         </NDescriptionsItem>
+        <NDescriptionsItem label="同行">{{ trip.companions || '—' }}</NDescriptionsItem>
+        <NDescriptionsItem label="交通方式">{{ trip.transport || '—' }}</NDescriptionsItem>
+        <NDescriptionsItem label="备注">{{ trip.remark || '—' }}</NDescriptionsItem>
+        <NDescriptionsItem label="提醒">
+          {{ trip.remindEnabled ? `出发前 ${trip.remindMinutesBefore || 60} 分钟` : '未开启' }}
+        </NDescriptionsItem>
       </NDescriptions>
     </NCard>
 

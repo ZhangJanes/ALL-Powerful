@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
 import { useLedgerStore } from '@/stores/ledger'
@@ -14,24 +14,27 @@ import {
 const router = useRouter()
 const ledgerStore = useLedgerStore()
 const range = ref('本月')
+const rangeMap: Record<string, string> = { 今日: 'today', 本周: 'week', 本月: 'month', 本年: 'year' }
 
-const expenseSum = computed(() => ledgerStore.ledger.filter((e) => e.type === 'expense').reduce((s, e) => s + e.amount, 0))
+const expenseSum = computed(() => ledgerStore.stats?.summary.totalExpense || 0)
 
-function tip(msg: string) {
-  alert(msg)
+async function exportFile() {
+  const x = await ledgerStore.exportLedger(rangeMap[range.value] || 'month')
+  const a = document.createElement('a')
+  a.href = `data:${x.mimeType};base64,${x.base64}`
+  a.download = x.fileName
+  a.click()
 }
 
 const pie = computed(() => {
-  const map = new Map<string, number>()
-  for (const e of ledgerStore.ledger) {
-    if (e.type !== 'expense') continue
-    map.set(e.category, (map.get(e.category) || 0) + e.amount)
-  }
-  return [...map.entries()].map(([name, value]) => ({ name, value }))
+  return (ledgerStore.stats?.categories || []).map((x) => ({ name: x.category, value: x.amount }))
 })
 
 const lineOption = computed(() => {
-  const { categories, values } = aggregateExpenseByDay(ledgerStore.ledger, 7)
+  const fallback = aggregateExpenseByDay(ledgerStore.ledger, 7)
+  const trend = ledgerStore.stats?.trend || []
+  const categories = trend.length ? trend.map((x) => x.day) : fallback.categories
+  const values = trend.length ? trend.map((x) => x.amount) : fallback.values
   return buildExpenseLineOption(categories, values)
 })
 
@@ -40,6 +43,29 @@ const pieOption = computed(() => buildCategoryPieOption(pie.value, { donut: true
 const barOption = computed(() => {
   const sorted = [...pie.value].sort((a, b) => b.value - a.value)
   return buildCategoryBarOption(sorted)
+})
+
+const detailRows = computed(() =>
+  (ledgerStore.stats?.entries || ledgerStore.ledger).map((e: any) => ({
+    id: e.id,
+    type: e.type,
+    amount: e.amount,
+    category: e.category || e.categoryName,
+    at: e.at || String(e.occurredAt || '').replace('T', ' '),
+    note: e.note || '—',
+  })),
+)
+
+watch(
+  range,
+  async () => {
+    await ledgerStore.syncStats(rangeMap[range.value] || 'month')
+  },
+  { immediate: true },
+)
+
+onMounted(async () => {
+  await ledgerStore.syncLedger(rangeMap[range.value] || 'month')
 })
 </script>
 
@@ -50,7 +76,7 @@ const barOption = computed(() => {
         <template #icon><NIcon :component="ArrowBackOutline" /></template>
       </NButton>
       <div class="page-title">统计报表</div>
-      <NButton size="tiny" secondary @click="tip('演示：导出 Excel')">导出</NButton>
+      <NButton size="tiny" secondary @click="exportFile">导出</NButton>
     </div>
 
     <NSelect v-model:value="range" :options="['今日', '本周', '本月', '本年'].map((v) => ({ label: v, value: v }))" style="max-width: 240px" />
@@ -78,7 +104,7 @@ const barOption = computed(() => {
 
     <NCard class="glass" :bordered="false" title="明细">
       <NList bordered>
-        <NListItem v-for="e in ledgerStore.ledger" :key="e.id">
+        <NListItem v-for="e in detailRows" :key="e.id">
           <NThing :title="`${e.category} · ${e.type === 'expense' ? '-' : '+'}¥${e.amount}`" :description="`${e.at} · ${e.note}`" />
         </NListItem>
       </NList>

@@ -43,13 +43,13 @@ watch(
   { immediate: true },
 )
 
-function save() {
+async function save() {
   const tagList = tags.value
     .split(/[,，]/)
     .map((s) => s.trim())
     .filter(Boolean)
   if (isNew.value) {
-    ideaStore.addIdea({
+    await ideaStore.addIdea({
       title: title.value || '未命名灵感',
       body: body.value,
       category: category.value,
@@ -62,7 +62,7 @@ function save() {
   }
   const i = existing.value
   if (!i) return
-  Object.assign(i, {
+  await ideaStore.updateIdea(i.id, {
     title: title.value || '未命名灵感',
     body: body.value,
     category: category.value,

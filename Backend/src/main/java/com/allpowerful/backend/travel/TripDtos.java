@@ -14,6 +14,11 @@ public class TripDtos {
             @NotNull LocalDateTime startAt,
             @NotNull LocalDateTime endAt,
             @NotBlank String place,
+            String companions,
+            String transport,
+            String remark,
+            @NotNull Boolean remindEnabled,
+            Integer remindMinutesBefore,
             @NotNull Boolean done,
             List<ChecklistItem> checklist
     ) {}
@@ -24,6 +29,11 @@ public class TripDtos {
             LocalDateTime startAt,
             LocalDateTime endAt,
             String place,
+            String companions,
+            String transport,
+            String remark,
+            Boolean remindEnabled,
+            Integer remindMinutesBefore,
             Boolean done,
             List<ChecklistItem> checklist
     ) {}

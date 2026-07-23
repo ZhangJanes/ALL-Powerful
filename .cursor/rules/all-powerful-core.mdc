@@ -1,0 +1,29 @@
+---
+description: ALL-Powerful 项目总则与工作纪律（始终生效）
+alwaysApply: true
+---
+
+# ALL-Powerful 总则
+
+完整指引：`zDocs/CLAUDE.md`。
+
+## 铁律
+
+1. 先想后写，范围/契约不清先问再改
+2. 最小必要实现，不加用不到的抽象
+3. 只改任务相关文件，不顺手重构/格式化
+4. 以可运行、契约一致为准，不过度设计
+
+## 架构速记
+
+- `Frontend/`：Vue 3 + Vite + TS + Naive UI + Pinia + Vue Router（history）+ Axios
+- `Backend/`：Spring Boot 3.3 / Java 17 + Security JWT + JPA + MyBatis + Flyway + MySQL；Redis/Kafka 可选
+- 包管理：前端 **pnpm**；后端 **Maven**
+- API 前缀：`/api`；统一响应 `{ success, data, message }`
+
+## 改动原则
+
+- 新功能按业务域落地（前后端同名域），不要平铺
+- 改接口同一轮同步：Controller/DTO/Flyway（如需）+ `Frontend/src/api` + `stores`
+- 记账/习惯/灵感当前多为前端 mock；未接后端前不要虚构 API
+- 不提交密钥、真实 `.env`、勿把 `Backend/target/` 当源码修改

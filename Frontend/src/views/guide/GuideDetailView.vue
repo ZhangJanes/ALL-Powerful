@@ -1,20 +1,50 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
-import { getArticle } from '@/data/guide'
+import { useGuideStore } from '@/stores/guide'
 import { useMessage } from 'naive-ui'
 
 const route = useRoute()
 const router = useRouter()
 const message = useMessage()
+const guideStore = useGuideStore()
+const article = ref<Awaited<ReturnType<typeof guideStore.getArticleBySlug>> | null>(null)
 
-const article = computed(() => getArticle(route.params.category as string, route.params.slug as string))
+const sections = computed(() => {
+  if (!article.value) return []
+  return [
+    { title: '一、办理条件', body: article.value.conditionsText || '-' },
+    { title: '二、所需材料', body: article.value.materialsText || '-', highlight: true },
+    { title: '三、办理流程', body: article.value.processText || '-' },
+    { title: '四、办理地点', body: article.value.locationText || '-' },
+    { title: '五、办理时间', body: article.value.timeText || '-' },
+    { title: '六、办理周期', body: article.value.periodText || '-' },
+    { title: '七、收费标准', body: article.value.feeText || '-' },
+    { title: '八、避坑技巧', body: article.value.tipsText || '-' },
+  ]
+})
 
-function linkMemo() {
-  message.success('已生成备忘录草稿（演示）')
-  router.push({ name: 'memo-new' })
+async function linkMemo() {
+  if (!article.value) return
+  await guideStore.linkMemo(article.value.id)
+  message.success('已生成关联备忘录')
+  router.push({ name: 'memo' })
 }
+
+async function toggleFavorite() {
+  if (!article.value) return
+  await guideStore.toggleFavorite(article.value)
+  article.value.favorite = !article.value.favorite
+}
+
+onMounted(async () => {
+  try {
+    article.value = await guideStore.getArticleBySlug(String(route.params.category), String(route.params.slug))
+  } catch {
+    article.value = null
+  }
+})
 </script>
 
 <template>
@@ -30,15 +60,15 @@ function linkMemo() {
     <NCard class="glass" :bordered="false" :title="article.title">
       <div class="intro">{{ article.intro }}</div>
       <NDivider />
-      <div v-for="(s, idx) in article.sections" :key="idx" class="sec">
+      <div v-for="(s, idx) in sections" :key="idx" class="sec">
         <div class="sec-title">{{ s.title }}</div>
         <div :class="['sec-body', s.highlight && 'hi']">{{ s.body }}</div>
       </div>
     </NCard>
 
     <NSpace vertical style="width: 100%">
-      <NButton block secondary>收藏</NButton>
-      <NButton block tertiary>一键咨询（演示）</NButton>
+      <NButton block secondary @click="toggleFavorite">{{ article.favorite ? '取消收藏' : '收藏' }}</NButton>
+      <NButton block tertiary>{{ article.consultUrl ? '一键咨询（链接已配置）' : '一键咨询（待配置）' }}</NButton>
     </NSpace>
   </div>
   <div v-else class="app-shell page">

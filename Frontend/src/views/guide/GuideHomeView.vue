@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline, ShieldCheckmarkOutline, HeartOutline, IdCardOutline, LayersOutline, DocumentTextOutline } from '@vicons/ionicons5'
-import { guideCategories } from '@/data/guide'
+import { useGuideStore } from '@/stores/guide'
 import type { Component } from 'vue'
 
 const router = useRouter()
+const guideStore = useGuideStore()
 
 const icons: Record<string, Component> = {
   insurance: ShieldCheckmarkOutline,
@@ -16,6 +18,10 @@ const icons: Record<string, Component> = {
 function go(cat: string) {
   router.push({ name: 'guide-list', params: { category: cat } })
 }
+
+onMounted(() => {
+  guideStore.syncCategories().then(() => guideStore.syncFavorites()).catch(() => {})
+})
 </script>
 
 <template>
@@ -34,26 +40,25 @@ function go(cat: string) {
 
     <div class="grid">
       <NCard
-        v-for="c in guideCategories"
-        :key="c.key"
+        v-for="c in guideStore.categories"
+        :key="c.id"
         class="cat glass"
         :bordered="false"
         hoverable
-        @click="go(c.key)"
+        @click="go(c.code)"
       >
         <div class="icon-wrap">
-          <NIcon :component="icons[c.key] || DocumentTextOutline" :size="26" />
+          <NIcon :component="icons[c.code] || DocumentTextOutline" :size="26" />
         </div>
         <div class="t">{{ c.title }}</div>
-        <div class="d">{{ c.desc }}</div>
+        <div class="d">{{ c.description }}</div>
         <NTag size="tiny" round type="info">{{ c.count }} 项</NTag>
       </NCard>
     </div>
 
-    <NCard class="glass" :bordered="false" title="我的收藏（示意）">
+    <NCard class="glass" :bordered="false" title="我的收藏">
       <NSpace>
-        <NTag round>医保报销</NTag>
-        <NTag round>身份证补办</NTag>
+        <NTag v-for="f in guideStore.favorites" :key="f.articleId" round>{{ f.title }}</NTag>
       </NSpace>
     </NCard>
   </div>

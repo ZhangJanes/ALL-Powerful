@@ -1,0 +1,24 @@
+---
+description: ALL-Powerful 后端（Spring Boot）约定
+globs: Backend/**/*.{java,yml,xml,sql}
+alwaysApply: false
+---
+
+# 后端约定
+
+- 包根：`com.allpowerful.backend`；按域分包：`auth` / `memo` / `travel` / `photo` / `message` / `settings`
+- 分层：Controller → Service → JPA Repository（复杂查询用 MyBatis + `resources/mapper/**/*.xml`）
+- Controller 路径：`/api/...`，返回 `ApiResponse.ok/fail`
+- 安全白名单：仅 `/api/auth/login`、`/api/auth/register`、`/actuator/health`；其余需 JWT
+- Schema：**只靠 Flyway**；`ddl-auto=validate`；变更新增 `V{n}__xxx.sql`，勿改已发布脚本
+- 公共：`common`（ApiResponse、AppException、CurrentUser、DomainEventPublisher）
+- Kafka：本地默认关闭；启用时走现有 Publisher/Topics，勿另起通道
+- 本地启动：`docker compose up -d` 后 `mvn spring-boot:run`；端口 `8080`
+
+```java
+// ✅
+@RequestMapping("/api/memos")
+public ApiResponse<List<MemoResponse>> list() {
+    return ApiResponse.ok(service.list());
+}
+```

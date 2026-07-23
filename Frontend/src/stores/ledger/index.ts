@@ -1,7 +1,17 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import {
+  createLedgerEntryApi,
+  deleteLedgerEntryApi,
+  exportLedgerApi,
+  fetchLedgerBudgetApi,
+  fetchLedgerEntriesApi,
+  fetchLedgerStatsApi,
+  upsertLedgerBudgetApi,
+  type LedgerStatsDto,
+} from '@/api/ledger'
 import { useMessageStore } from '@/stores/message'
-import { todayYmd, uid } from '@/stores/shared/utils'
+import { todayYmd } from '@/stores/shared/utils'
 
 export type LedgerEntry = {
   id: string
@@ -13,15 +23,12 @@ export type LedgerEntry = {
 }
 
 export const useLedgerStore = defineStore('ledger', () => {
-  const today = todayYmd()
-  const monthlyBudget = ref(2000)
-  const monthlySpent = ref(770)
-
-  const ledger = ref<LedgerEntry[]>([
-    { id: 'l1', type: 'expense', amount: 15, category: '餐饮', note: '早餐', at: `${today} 08:12` },
-    { id: 'l2', type: 'expense', amount: 30, category: '餐饮', note: '午餐', at: `${today} 12:40` },
-    { id: 'l3', type: 'expense', amount: 44, category: '交通', note: '地铁', at: `${today} 18:05` },
-  ])
+  const monthlyBudget = ref(0)
+  const monthlySpent = ref(0)
+  const ledger = ref<LedgerEntry[]>([])
+  const alertThreshold = ref(80)
+  const loaded = ref(false)
+  const stats = ref<LedgerStatsDto | null>(null)
 
   const todayExpense = computed(() => {
     const d = todayYmd()
@@ -30,11 +37,82 @@ export const useLedgerStore = defineStore('ledger', () => {
 
   const budgetLeft = computed(() => Math.max(0, monthlyBudget.value - monthlySpent.value))
 
-  function addLedger(e: Omit<LedgerEntry, 'id'>) {
-    ledger.value.unshift({ ...e, id: uid() })
-    if (e.type === 'expense') monthlySpent.value += e.amount
+  async function syncLedger(range?: string) {
+    const [rows, budget] = await Promise.all([fetchLedgerEntriesApi(range ? { range } : undefined), fetchLedgerBudgetApi()])
+    ledger.value = rows.map((x) => ({
+      id: String(x.id),
+      type: x.type,
+      amount: Number(x.amount),
+      category: x.categoryName,
+      note: x.note || '—',
+      at: String(x.occurredAt).replace('T', ' '),
+    }))
+    monthlyBudget.value = Number(budget.totalBudget || 0)
+    monthlySpent.value = Number(budget.spent || 0)
+    alertThreshold.value = Number(budget.alertThreshold || 80)
+    loaded.value = true
+  }
+
+  async function addLedger(e: Omit<LedgerEntry, 'id'>) {
+    await createLedgerEntryApi({
+      type: e.type,
+      amount: e.amount,
+      categoryName: e.category,
+      note: e.note,
+      occurredAt: e.at.replace(' ', 'T'),
+    })
+    await syncLedger()
     useMessageStore().pushActivity(`新增记账：${e.category} ¥${e.amount}`)
   }
 
-  return { ledger, monthlyBudget, monthlySpent, todayExpense, budgetLeft, addLedger }
+  async function removeLedger(id: string) {
+    await deleteLedgerEntryApi(id)
+    await syncLedger()
+  }
+
+  async function refreshBudget() {
+    const budget = await fetchLedgerBudgetApi()
+    monthlyBudget.value = Number(budget.totalBudget || 0)
+    monthlySpent.value = Number(budget.spent || 0)
+    alertThreshold.value = Number(budget.alertThreshold || 80)
+  }
+
+  async function saveBudget(totalBudget: number, items: { categoryName: string; amount: number }[] = []) {
+    const d = new Date()
+    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    await upsertLedgerBudgetApi({ month, totalBudget, alertThreshold: alertThreshold.value, items })
+    await refreshBudget()
+  }
+
+  async function syncStats(range = 'month') {
+    stats.value = await fetchLedgerStatsApi({ range })
+  }
+
+  async function exportLedger(range = 'month') {
+    return exportLedgerApi({ range })
+  }
+
+  if (!loaded.value) {
+    syncLedger().catch(() => {
+      const today = todayYmd()
+      ledger.value = [{ id: 'local-1', type: 'expense', amount: 0, category: '其他', note: '离线', at: `${today} 00:00` }]
+    })
+  }
+
+  return {
+    ledger,
+    monthlyBudget,
+    monthlySpent,
+    alertThreshold,
+    todayExpense,
+    budgetLeft,
+    stats,
+    syncLedger,
+    addLedger,
+    removeLedger,
+    refreshBudget,
+    saveBudget,
+    syncStats,
+    exportLedger,
+  }
 })

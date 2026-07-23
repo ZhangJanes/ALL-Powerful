@@ -1,7 +1,15 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import {
+  createIdeaApi,
+  deleteIdeaApi,
+  fetchIdeaListApi,
+  fetchIdeaTrashApi,
+  restoreIdeaApi,
+  toggleIdeaStarApi,
+  updateIdeaApi,
+} from '@/api/idea'
 import { useMessageStore } from '@/stores/message'
-import { uid } from '@/stores/shared/utils'
 
 export type Idea = {
   id: string
@@ -14,22 +22,71 @@ export type Idea = {
 }
 
 export const useIdeaStore = defineStore('idea', () => {
-  const ideas = ref<Idea[]>([
-    {
-      id: 'i1',
-      title: '副业思路：手工饰品',
-      body: '简约风 + 抖音/小红书直播，低成本起步。',
-      category: '赚钱思路',
-      tags: ['副业', '手工'],
-      starred: true,
-      at: '2026-03-17',
-    },
-  ])
+  const ideas = ref<Idea[]>([])
+  const trash = ref<Idea[]>([])
 
-  function addIdea(i: Omit<Idea, 'id' | 'at'>) {
-    ideas.value.unshift({ ...i, id: uid(), at: new Date().toISOString().slice(0, 10) })
+  async function syncIdeas() {
+    const rows = await fetchIdeaListApi()
+    ideas.value = rows.map((i) => ({
+      id: String(i.id),
+      title: i.title,
+      body: i.body || '',
+      category: i.category,
+      tags: i.tags || [],
+      starred: Boolean(i.starred),
+      at: String(i.updatedAt).slice(0, 10),
+    }))
+  }
+
+  async function syncTrash() {
+    const rows = await fetchIdeaTrashApi()
+    trash.value = rows.map((i) => ({
+      id: String(i.id),
+      title: i.title,
+      body: i.body || '',
+      category: i.category,
+      tags: i.tags || [],
+      starred: Boolean(i.starred),
+      at: String(i.updatedAt).slice(0, 10),
+    }))
+  }
+
+  async function addIdea(i: Omit<Idea, 'id' | 'at'>) {
+    await createIdeaApi({
+      title: i.title,
+      body: i.body,
+      category: i.category,
+      tags: i.tags,
+      starred: i.starred,
+      imageUrls: [],
+    })
+    await syncIdeas()
     useMessageStore().pushActivity(`记录灵感：${i.title}`)
   }
 
-  return { ideas, addIdea }
+  async function updateIdea(id: string, payload: Omit<Idea, 'id' | 'at'>) {
+    await updateIdeaApi(id, { ...payload, imageUrls: [] })
+    await syncIdeas()
+  }
+
+  async function removeIdea(id: string) {
+    await deleteIdeaApi(id)
+    await syncIdeas()
+    await syncTrash()
+  }
+
+  async function restoreIdea(id: string) {
+    await restoreIdeaApi(id)
+    await syncIdeas()
+    await syncTrash()
+  }
+
+  async function toggleStar(id: string) {
+    await toggleIdeaStarApi(id)
+    await syncIdeas()
+  }
+
+  syncIdeas().catch(() => {})
+
+  return { ideas, trash, addIdea, updateIdea, removeIdea, restoreIdea, toggleStar, syncIdeas, syncTrash }
 })

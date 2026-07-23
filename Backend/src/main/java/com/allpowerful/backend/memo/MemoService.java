@@ -18,7 +18,12 @@ public class MemoService {
 
     @Transactional(readOnly = true)
     public List<MemoDtos.MemoResponse> list(Long userId) {
-        return memoRepository.findByUserIdOrderByUpdatedAtDesc(userId).stream().map(this::toResponse).toList();
+        return memoRepository.findByUserIdAndDeletedAtIsNullOrderByUpdatedAtDesc(userId).stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MemoDtos.MemoResponse> trash(Long userId) {
+        return memoRepository.findByUserIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(userId).stream().map(this::toResponse).toList();
     }
 
     @Transactional
@@ -51,6 +56,24 @@ public class MemoService {
     public void delete(Long userId, Long id) {
         Memo memo = memoRepository.findById(id).orElseThrow(() -> new AppException("备忘录不存在"));
         if (!memo.getUserId().equals(userId)) throw new AppException("无权限");
+        memo.setDeletedAt(LocalDateTime.now());
+        memo.setUpdatedAt(LocalDateTime.now());
+        memoRepository.save(memo);
+    }
+
+    @Transactional
+    public void restore(Long userId, Long id) {
+        Memo memo = memoRepository.findById(id).orElseThrow(() -> new AppException("备忘录不存在"));
+        if (!memo.getUserId().equals(userId)) throw new AppException("无权限");
+        memo.setDeletedAt(null);
+        memo.setUpdatedAt(LocalDateTime.now());
+        memoRepository.save(memo);
+    }
+
+    @Transactional
+    public void deletePermanent(Long userId, Long id) {
+        Memo memo = memoRepository.findById(id).orElseThrow(() -> new AppException("备忘录不存在"));
+        if (!memo.getUserId().equals(userId)) throw new AppException("无权限");
         memoRepository.delete(memo);
     }
 
@@ -61,6 +84,7 @@ public class MemoService {
         memo.setCategory(req.category());
         memo.setPinned(req.pinned());
         memo.setRemindAt(req.remindAt());
+        memo.setRemindRepeat(req.remindRepeat());
         memo.getTodos().clear();
         if (req.todos() != null) {
             for (int i = 0; i < req.todos().size(); i++) {
@@ -86,6 +110,7 @@ public class MemoService {
                 memo.getCategory(),
                 memo.getPinned(),
                 memo.getRemindAt(),
+                memo.getRemindRepeat(),
                 memo.getUpdatedAt(),
                 todos
         );

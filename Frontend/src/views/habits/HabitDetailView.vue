@@ -1,15 +1,37 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowBackOutline } from '@vicons/ionicons5'
 import { useHabitStore } from '@/stores/habit'
+import { useMessage } from 'naive-ui'
 
 const route = useRoute()
 const router = useRouter()
 const habitStore = useHabitStore()
+const message = useMessage()
+const detail = ref<Awaited<ReturnType<typeof habitStore.getHabitDetail>> | null>(null)
 
 const habit = computed(() => habitStore.habits.find((h) => h.id === route.params.id))
 const rate = computed(() => (habit.value ? Math.round((habit.value.total / habit.value.targetDays) * 100) : 0))
+
+async function loadDetail() {
+  if (!route.params.id) return
+  detail.value = await habitStore.getHabitDetail(String(route.params.id))
+}
+
+async function makeUp() {
+  if (!habit.value) return
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  await habitStore.makeUp(habit.value.id, ymd)
+  await loadDetail()
+  message.success('已补卡')
+}
+
+onMounted(() => {
+  loadDetail().catch(() => {})
+})
 </script>
 
 <template>
@@ -31,14 +53,17 @@ const rate = computed(() => (habit.value ? Math.round((habit.value.total / habit
       </NDescriptions>
     </NCard>
 
-    <NCard class="glass" :bordered="false" title="打卡日历（示意）">
-      <NAlert type="default" title="可视化日历">
-        接入数据后可按 PRD 显示绿 / 灰 / 红状态；此处保留布局占位。
-      </NAlert>
+    <NCard class="glass" :bordered="false" title="打卡日历">
+      <NSpace>
+        <NTag v-for="p in detail?.calendar.slice(-14) || []" :key="p.date" :type="p.status === 'checked' ? 'success' : p.status === 'missed' ? 'error' : 'default'">
+          {{ p.date.slice(5) }}
+        </NTag>
+      </NSpace>
+      <div class="subtle" style="margin-top: 8px">本月补卡剩余：{{ detail?.makeupLeft ?? 3 }} 次</div>
     </NCard>
 
     <NSpace>
-      <NButton secondary block>补卡</NButton>
+      <NButton secondary block @click="makeUp">补卡</NButton>
       <NButton tertiary block>暂停任务</NButton>
     </NSpace>
   </div>

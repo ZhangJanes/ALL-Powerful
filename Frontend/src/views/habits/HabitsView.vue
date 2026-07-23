@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline, AddOutline } from '@vicons/ionicons5'
 import { useHabitStore } from '@/stores/habit'
-import { useHomeStore } from '@/stores/home'
 import { NHeatmap, useDialog, useMessage } from 'naive-ui'
 import type { HabitHeatmapPeriod } from '@/utils/habitHeatmap'
 import { buildHabitGoalHeatmap } from '@/utils/habitHeatmap'
 
 const router = useRouter()
 const habitStore = useHabitStore()
-const homeStore = useHomeStore()
 
 const heatTab = ref<HabitHeatmapPeriod>('week')
 const habitHeat = computed(() => buildHabitGoalHeatmap(heatTab.value, habitStore.habits))
@@ -25,12 +23,21 @@ function onCheck(h: { id: string; name: string; doneToday: boolean }) {
     content: `确认完成「${h.name}」今日打卡？`,
     positiveText: '确认',
     negativeText: '取消',
-    onPositiveClick: () => {
-      habitStore.checkIn(h.id)
+    onPositiveClick: async () => {
+      await habitStore.checkIn(h.id)
       message.success('打卡成功')
     },
   })
 }
+
+onMounted(async () => {
+  try {
+    await habitStore.syncHabits()
+    await habitStore.syncAchievements()
+  } catch {
+    // noop
+  }
+})
 </script>
 
 <template>
@@ -87,7 +94,9 @@ function onCheck(h: { id: string; name: string; doneToday: boolean }) {
 
     <NCard class="glass" :bordered="false" title="我的成就">
       <NSpace>
-        <NTag v-for="a in homeStore.achievements" :key="a" type="warning" round>{{ a }}</NTag>
+        <NTag v-for="a in habitStore.achievements" :key="a.code" :type="a.unlocked ? 'success' : 'warning'" round>
+          {{ a.name }}（{{ a.progress }}/{{ a.target }}）
+        </NTag>
       </NSpace>
     </NCard>
   </div>

@@ -12,6 +12,11 @@ export type TripPayload = {
   startAt: string
   endAt: string
   place: string
+  companions?: string
+  transport?: string
+  remark?: string
+  remindEnabled: boolean
+  remindMinutesBefore?: number
   done: boolean
   checklist?: TripChecklistDto[]
 }
@@ -23,6 +28,11 @@ export type TripDto = {
   startAt: string
   endAt: string
   place: string
+  companions?: string
+  transport?: string
+  remark?: string
+  remindEnabled: boolean
+  remindMinutesBefore?: number
   done: boolean
   checklist?: { id: number; text: string; done: boolean }[]
 }

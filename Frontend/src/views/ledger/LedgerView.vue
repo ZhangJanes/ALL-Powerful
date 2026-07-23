@@ -32,7 +32,7 @@ function press(k: string) {
   else amount.value += k
 }
 
-function save() {
+async function save() {
   const n = Number(amount.value)
   if (!Number.isFinite(n) || n <= 0) {
     message.warning('请输入正确金额')
@@ -42,7 +42,7 @@ function save() {
   const at = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(
     d.getHours(),
   ).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  ledgerStore.addLedger({
+  await ledgerStore.addLedger({
     type: tab.value,
     amount: n,
     category: category.value,

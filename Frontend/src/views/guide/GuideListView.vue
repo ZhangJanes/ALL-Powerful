@@ -1,15 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowBackOutline, ChevronForwardOutline } from '@vicons/ionicons5'
-import { guideCategories, listArticles } from '@/data/guide'
+import { useGuideStore } from '@/stores/guide'
 
 const route = useRoute()
 const router = useRouter()
+const guideStore = useGuideStore()
+const items = ref<Awaited<ReturnType<typeof guideStore.listArticles>>>([])
 
 const category = computed(() => route.params.category as string)
-const title = computed(() => guideCategories.find((c) => c.key === category.value)?.title ?? '办事指南')
-const items = computed(() => listArticles(category.value))
+const title = computed(() => guideStore.categoryMap[category.value]?.title ?? '办事指南')
+
+async function load() {
+  items.value = await guideStore.listArticles(category.value)
+}
+
+watch(category, () => load().catch(() => {}))
+
+onMounted(async () => {
+  await guideStore.syncCategories()
+  await load()
+})
 </script>
 
 <template>
@@ -25,7 +37,7 @@ const items = computed(() => listArticles(category.value))
     <NList v-if="items.length" bordered class="glass list">
       <NListItem
         v-for="a in items"
-        :key="a.slug"
+        :key="a.id"
         @click="router.push({ name: 'guide-detail', params: { category: category, slug: a.slug } })"
       >
         <NThing :title="a.title" :description="a.intro">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowBackOutline, AddOutline, Star, StarOutline } from '@vicons/ionicons5'
 import { useIdeaStore } from '@/stores/idea'
@@ -16,6 +16,14 @@ const list = computed(() => {
   const k = q.value.trim()
   if (k) xs = xs.filter((i) => i.title.includes(k) || i.body.includes(k) || i.tags.some((t) => t.includes(k)))
   return xs
+})
+
+onMounted(async () => {
+  try {
+    await ideaStore.syncIdeas()
+  } catch {
+    // noop
+  }
 })
 </script>
 

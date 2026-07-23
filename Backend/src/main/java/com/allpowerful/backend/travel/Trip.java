@@ -35,6 +35,21 @@ public class Trip {
     @Column(nullable = false, length = 255)
     private String place;
 
+    @Column(length = 255)
+    private String companions;
+
+    @Column(length = 32)
+    private String transport;
+
+    @Column(length = 255)
+    private String remark;
+
+    @Column(name = "remind_enabled", nullable = false)
+    private Boolean remindEnabled = false;
+
+    @Column(name = "remind_minutes_before")
+    private Integer remindMinutesBefore;
+
     @Column(nullable = false)
     private Boolean done = false;
 

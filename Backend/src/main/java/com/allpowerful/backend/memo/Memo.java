@@ -35,6 +35,12 @@ public class Memo {
     @Column(name = "remind_at")
     private LocalDateTime remindAt;
 
+    @Column(name = "remind_repeat", length = 16)
+    private String remindRepeat;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
