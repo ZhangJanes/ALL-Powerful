@@ -13,10 +13,18 @@ const tab = ref<'expense' | 'income'>('expense')
 const amount = ref<string>('0')
 const category = ref('餐饮')
 const note = ref('')
+/** 记账时间，默认当前时间 */
+const occurredAtTs = ref<number>(Date.now())
 
 const expenseCats = ['餐饮', '交通', '日用品', '医疗', '教育', '娱乐', '房贷/房租', '红包', '其他']
 const incomeCats = ['工资', '奖金', '兼职', '理财', '红包', '其他']
 const cats = computed(() => (tab.value === 'expense' ? expenseCats : incomeCats))
+
+function formatAt(ts: number) {
+  const d = new Date(ts)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 function press(k: string) {
   if (k === 'del') {
@@ -38,20 +46,18 @@ async function save() {
     message.warning('请输入正确金额')
     return
   }
-  const d = new Date()
-  const at = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(
-    d.getHours(),
-  ).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const ts = occurredAtTs.value || Date.now()
   await ledgerStore.addLedger({
     type: tab.value,
     amount: n,
     category: category.value,
     note: note.value || '—',
-    at,
+    at: formatAt(ts),
   })
   message.success('记账成功')
   amount.value = '0'
   note.value = ''
+  occurredAtTs.value = Date.now()
 }
 </script>
 
@@ -97,6 +103,16 @@ async function save() {
 
     <NInput v-model:value="note" placeholder="备注，如：早餐、地铁费" />
 
+    <div class="field">
+      <div class="field-label">记账时间</div>
+      <NDatePicker
+        v-model:value="occurredAtTs"
+        type="datetime"
+        format="yyyy-MM-dd HH:mm"
+        style="width: 100%"
+      />
+    </div>
+
     <div class="keys">
       <NButton v-for="k in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del']" :key="k" class="key" secondary @click="press(k === 'del' ? 'del' : k)">
         {{ k === 'del' ? '⌫' : k }}
@@ -139,6 +155,15 @@ async function save() {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-label {
+  font-size: 13px;
+  color: var(--fm-text-muted);
 }
 .keys {
   display: grid;

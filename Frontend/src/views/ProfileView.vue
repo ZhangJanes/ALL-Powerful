@@ -10,6 +10,7 @@ import {
 } from '@vicons/ionicons5'
 import { useHomeStore } from '@/stores/home'
 import { useAuthStore } from '@/stores/auth'
+import { WEATHER_CITIES, type WeatherCity } from '@/constants/weatherCities'
 import { useSettingsStore, type FontMode, type ThemeMode } from '@/stores/settings'
 import { THEME_PRESETS, type ThemePresetKey } from '@/theme/presets'
 
@@ -59,6 +60,8 @@ const fontOptions: { label: string; value: FontMode }[] = [
   { label: '波波体', value: 'bobo' },
   { label: '麦圆体', value: 'maiyuan' },
 ]
+
+const weatherCityOptions = WEATHER_CITIES.map((c) => ({ label: c, value: c }))
 
 function getFontFamilyByMode(mode: FontMode) {
   if (mode === 'alimama') return '阿里妈妈方圆体'
@@ -159,6 +162,20 @@ function applyFont(v: FontMode) {
           {{ o.label }}
         </NRadioButton>
       </NRadioGroup>
+    </NCard>
+
+    <NCard class="glass block" :bordered="false" title="天气城市">
+      <div class="subtle">首页天气按所选城市展示（北京 / 上海 / 重庆 / 天津）</div>
+      <div style="height: 10px" />
+      <NRadioGroup
+        :value="settings.weatherCity"
+        @update:value="(v: WeatherCity) => settings.setWeatherCity(v)"
+      >
+        <NRadioButton v-for="o in weatherCityOptions" :key="o.value" :value="o.value">
+          {{ o.label }}
+        </NRadioButton>
+      </NRadioGroup>
+      <div class="subtle" style="margin-top: 10px">当前：{{ settings.weatherCity }}</div>
     </NCard>
 
     <NCard class="glass block" :bordered="false" title="快捷管理">

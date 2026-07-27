@@ -1,19 +1,24 @@
 import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { fetchUserSettingsApi, updateUserSettingsApi } from '@/api/settings'
+import { WEATHER_CITIES, type WeatherCity } from '@/constants/weatherCities'
 import { useAuthStore } from '@/stores/auth'
 import type { ThemePresetKey } from '@/theme/presets'
 import { getPreset, THEME_PRESETS } from '@/theme/presets'
 
 export type ThemeMode = 'light' | 'dark'
 export type FontMode = 'default' | 'alimama' | 'cute' | 'bobo' | 'maiyuan'
+export type { WeatherCity }
+export { WEATHER_CITIES }
 
 const LS_MODE = 'fm.theme.mode'
 const LS_PRESET = 'fm.theme.preset'
 const LS_FONT = 'fm.font.mode'
+const LS_WEATHER_CITY = 'fm.weather.city'
 
 const PRESET_KEYS = new Set(THEME_PRESETS.map((p) => p.key))
 const FONT_MODES = new Set<FontMode>(['default', 'alimama', 'cute', 'bobo', 'maiyuan'])
+const WEATHER_CITY_SET = new Set<string>(WEATHER_CITIES)
 
 function normalizeMode(raw: unknown): ThemeMode {
   if (raw === 'light' || raw === 'dark') return raw
@@ -28,6 +33,11 @@ function normalizePreset(raw: unknown): ThemePresetKey {
 function normalizeFontMode(raw: unknown): FontMode {
   if (typeof raw === 'string' && FONT_MODES.has(raw as FontMode)) return raw as FontMode
   return 'default'
+}
+
+function normalizeWeatherCity(raw: unknown): WeatherCity {
+  if (typeof raw === 'string' && WEATHER_CITY_SET.has(raw)) return raw as WeatherCity
+  return '北京'
 }
 
 function applyDomTheme(theme: 'light' | 'dark', preset: ThemePresetKey, font: FontMode) {
@@ -46,6 +56,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const themeMode = ref<ThemeMode>(normalizeMode(localStorage.getItem(LS_MODE)))
   const themePreset = ref<ThemePresetKey>(normalizePreset(localStorage.getItem(LS_PRESET)))
   const fontMode = ref<FontMode>(normalizeFontMode(localStorage.getItem(LS_FONT)))
+  const weatherCity = ref<WeatherCity>(normalizeWeatherCity(localStorage.getItem(LS_WEATHER_CITY)))
   const syncing = ref(false)
   const synced = ref(false)
 
@@ -70,12 +81,19 @@ export const useSettingsStore = defineStore('settings', () => {
     localStorage.setItem(LS_MODE, themeMode.value)
     localStorage.setItem(LS_PRESET, themePreset.value)
     localStorage.setItem(LS_FONT, fontMode.value)
+    localStorage.setItem(LS_WEATHER_CITY, weatherCity.value)
   }
 
-  function applySettings(payload: { themeMode: string; themePreset: string; fontMode: string }) {
+  function applySettings(payload: {
+    themeMode: string
+    themePreset: string
+    fontMode: string
+    weatherCity?: string
+  }) {
     themeMode.value = normalizeMode(payload.themeMode)
     themePreset.value = normalizePreset(payload.themePreset)
     fontMode.value = normalizeFontMode(payload.fontMode)
+    weatherCity.value = normalizeWeatherCity(payload.weatherCity)
     persistLocal()
   }
 
@@ -84,6 +102,7 @@ export const useSettingsStore = defineStore('settings', () => {
       themeMode: themeMode.value,
       themePreset: themePreset.value,
       fontMode: fontMode.value,
+      weatherCity: weatherCity.value,
     }
   }
 
@@ -121,11 +140,15 @@ export const useSettingsStore = defineStore('settings', () => {
       const localBeforeSync = currentPayload()
       const remote = await fetchUserSettingsApi()
       const isDefaultRemote =
-        remote.themeMode === 'dark' && remote.themePreset === 'ocean' && remote.fontMode === 'default'
+        remote.themeMode === 'dark' &&
+        remote.themePreset === 'ocean' &&
+        remote.fontMode === 'default' &&
+        normalizeWeatherCity(remote.weatherCity) === '北京'
       const localCustomized =
         localBeforeSync.themeMode !== 'dark' ||
         localBeforeSync.themePreset !== 'ocean' ||
-        localBeforeSync.fontMode !== 'default'
+        localBeforeSync.fontMode !== 'default' ||
+        localBeforeSync.weatherCity !== '北京'
 
       if (isDefaultRemote && localCustomized) {
         const saved = await updateUserSettingsApi(localBeforeSync)
@@ -159,6 +182,17 @@ export const useSettingsStore = defineStore('settings', () => {
     scheduleSaveToServer()
   }
 
+  function setWeatherCity(city: WeatherCity) {
+    weatherCity.value = normalizeWeatherCity(city)
+    persistLocal()
+    // 天气接口读服务端设置，城市变更立即落库，避免首页仍用旧城市
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
+    void saveToServer()
+  }
+
   function syncDomTheme() {
     applyDomTheme(resolvedTheme.value, themePreset.value, fontMode.value)
   }
@@ -167,6 +201,7 @@ export const useSettingsStore = defineStore('settings', () => {
     themeMode,
     themePreset,
     fontMode,
+    weatherCity,
     resolvedTheme,
     isDark,
     syncing,
@@ -174,6 +209,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setThemeMode,
     setThemePreset,
     setFontMode,
+    setWeatherCity,
     syncDomTheme,
     syncFromServer,
     saveToServer,

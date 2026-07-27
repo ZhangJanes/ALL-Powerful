@@ -8,10 +8,13 @@ import {
   DocumentTextOutline,
   ImagesOutline,
   LockClosedOutline,
+  PartlySunnyOutline,
   PersonOutline,
   WalletOutline,
 } from '@vicons/ionicons5'
 import FmAntdIllustration from '@/components/illustrations/FmAntdIllustration.vue'
+import { fetchPublicWeatherApi, type WeatherDto } from '@/api/weather'
+import { isWeatherCity, type WeatherCity } from '@/constants/weatherCities'
 import { useAuthStore } from '@/stores/auth'
 
 type AuthMode = 'login' | 'register'
@@ -29,8 +32,30 @@ const confirmPassword = ref('')
 const remember = ref(true)
 const loading = ref(false)
 const now = ref(new Date())
+const weather = ref<WeatherDto | null>(null)
+const weatherError = ref('')
 let clockTimer: ReturnType<typeof setInterval> | undefined
 let featureTimer: ReturnType<typeof setInterval> | undefined
+
+function resolveLoginWeatherCity(): WeatherCity {
+  const saved = localStorage.getItem('fm.weather.city')
+  return isWeatherCity(saved) ? saved : '北京'
+}
+
+async function loadTodayWeather() {
+  weatherError.value = ''
+  try {
+    weather.value = await fetchPublicWeatherApi(resolveLoginWeatherCity())
+  } catch (e) {
+    weatherError.value = e instanceof Error ? e.message : '天气暂不可用'
+  }
+}
+
+const weatherLine = computed(() => {
+  if (!weather.value) return ''
+  const t = Math.round(weather.value.current.temperature)
+  return `${weather.value.city} · ${weather.value.current.description} ${t}℃`
+})
 
 watch(
   () => route.name,
@@ -46,6 +71,7 @@ onMounted(() => {
   featureTimer = setInterval(() => {
     featureIndex.value = (featureIndex.value + 1) % featureCards.length
   }, 4200)
+  void loadTodayWeather()
 })
 
 onUnmounted(() => {
@@ -240,6 +266,11 @@ const fixedOverrides = {
               <div class="greeting">{{ greeting }}</div>
               <div class="time-line">{{ timeLine }}</div>
               <div class="date-line">{{ dateLine }}</div>
+              <div v-if="weatherLine" class="weather-line">
+                <NIcon :component="PartlySunnyOutline" :size="16" />
+                <span>{{ weatherLine }}</span>
+              </div>
+              <div v-else-if="weatherError" class="weather-line muted">今日天气暂不可用</div>
             </div>
 
             <div class="feature-carousel">
@@ -577,6 +608,21 @@ const fixedOverrides = {
   margin-top: 8px;
   font-size: 13px;
   color: #64748b;
+}
+
+.weather-line {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f766e;
+}
+
+.weather-line.muted {
+  font-weight: 500;
+  color: #94a3b8;
 }
 
 .hero-desc {

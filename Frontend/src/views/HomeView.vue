@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
     DocumentTextOutline,
@@ -10,12 +10,14 @@ import {
     ImagesOutline,
     ReaderOutline,
     GridOutline,
+    PartlySunnyOutline,
 } from '@vicons/ionicons5'
 import { useMemoStore } from '@/stores/memo'
 import { useLedgerStore } from '@/stores/ledger'
 import { useHabitStore } from '@/stores/habit'
 import { useMessageStore } from '@/stores/message'
-import { useHomeStore } from '@/stores/home'
+import { useWeatherStore } from '@/stores/weather'
+import { useSettingsStore } from '@/stores/settings'
 import FmChartBlock from '@/components/charts/FmChartBlock.vue'
 import {
     aggregateExpenseByDay,
@@ -28,7 +30,10 @@ const memoStore = useMemoStore()
 const ledgerStore = useLedgerStore()
 const habitStore = useHabitStore()
 const messageStore = useMessageStore()
-const homeStore = useHomeStore()
+const weatherStore = useWeatherStore()
+const settingsStore = useSettingsStore()
+
+const weatherModal = ref(false)
 
 const homeLineMixOption = computed(() => {
     const { categories, values } = aggregateExpenseByDay(ledgerStore.ledger, 7)
@@ -63,6 +68,34 @@ const dateStr = new Intl.DateTimeFormat('zh-CN', {
     month: 'long',
     day: 'numeric',
 }).format(new Date())
+
+function openWeather() {
+    weatherModal.value = true
+}
+
+async function refreshWeather() {
+    try {
+        await weatherStore.syncWeather()
+    } catch {
+        // store 已记录 error，界面展示即可
+    }
+}
+
+function goProfile() {
+    weatherModal.value = false
+    void router.push({ name: 'profile' })
+}
+
+onMounted(() => {
+    void weatherStore.syncWeather().catch(() => undefined)
+})
+
+watch(
+    () => settingsStore.weatherCity,
+    () => {
+        void weatherStore.syncWeather().catch(() => undefined)
+    },
+)
 </script>
 
 <template>
@@ -71,7 +104,10 @@ const dateStr = new Intl.DateTimeFormat('zh-CN', {
             <div class="hero-top">
                 <div>
                     <div class="date-line">{{ dateStr }} {{ weekday }}</div>
-                    <div class="weather">{{ homeStore.weather }}</div>
+                    <button class="weather" type="button" @click="openWeather">
+                        <NIcon :component="PartlySunnyOutline" :size="16" />
+                        <span>{{ weatherStore.summary }}</span>
+                    </button>
                 </div>
                 <NAvatar
                     round
@@ -90,6 +126,39 @@ const dateStr = new Intl.DateTimeFormat('zh-CN', {
                 件
             </div>
         </div>
+
+        <NCard
+            class="glass card-block"
+            :bordered="false"
+            size="small"
+            title="未来 5 天天气"
+        >
+            <div v-if="weatherStore.loading && !weatherStore.weather" class="weather-hint">
+                正在获取天气…
+            </div>
+            <div v-else-if="weatherStore.error && !weatherStore.weather" class="weather-hint danger">
+                {{ weatherStore.error }}
+                <NButton text type="primary" @click="refreshWeather">重试</NButton>
+            </div>
+            <div v-else class="forecast-row">
+                <button
+                    v-for="day in weatherStore.weather?.daily || []"
+                    :key="day.date"
+                    type="button"
+                    class="forecast-day"
+                    @click="openWeather"
+                >
+                    <div class="forecast-week">{{ day.weekday }}</div>
+                    <div class="forecast-desc">{{ day.description }}</div>
+                    <div class="forecast-temp">
+                        {{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°
+                    </div>
+                    <div v-if="day.precipProbability != null" class="forecast-rain">
+                        降水 {{ day.precipProbability }}%
+                    </div>
+                </button>
+            </div>
+        </NCard>
 
         <NCard
             class="glass card-block"
@@ -216,6 +285,63 @@ const dateStr = new Intl.DateTimeFormat('zh-CN', {
                 variant="empty"
             />
         </NCard>
+
+        <NModal
+            v-model:show="weatherModal"
+            preset="card"
+            style="width: min(520px, calc(100vw - 24px))"
+            :title="`天气 · ${weatherStore.weather?.city || weatherStore.city}`"
+        >
+            <div class="weather-modal">
+                <div class="city-row">
+                    <div class="city-tip">
+                        城市：{{ weatherStore.city || settingsStore.weatherCity }}
+                        <button class="linkish" type="button" @click="goProfile">去个人页修改</button>
+                    </div>
+                    <NButton type="primary" :loading="weatherStore.loading" @click="refreshWeather">
+                        刷新
+                    </NButton>
+                </div>
+
+                <div v-if="weatherStore.weather" class="current-block">
+                    <div class="current-main">
+                        {{ weatherStore.weather.current.description }}
+                        {{ Math.round(weatherStore.weather.current.temperature) }}℃
+                    </div>
+                    <div class="current-meta">
+                        <span v-if="weatherStore.weather.current.humidity != null">
+                            湿度 {{ weatherStore.weather.current.humidity }}%
+                        </span>
+                        <span v-if="weatherStore.weather.current.windSpeed != null">
+                            风速 {{ weatherStore.weather.current.windSpeed }} km/h
+                        </span>
+                    </div>
+                </div>
+                <div v-else-if="weatherStore.error" class="weather-hint danger">
+                    {{ weatherStore.error }}
+                </div>
+
+                <div class="modal-forecast">
+                    <div
+                        v-for="day in weatherStore.weather?.daily || []"
+                        :key="day.date"
+                        class="modal-day"
+                    >
+                        <div>
+                            <div class="forecast-week">{{ day.weekday }}</div>
+                            <div class="forecast-date">{{ day.date.slice(5) }}</div>
+                        </div>
+                        <div class="forecast-desc">{{ day.description }}</div>
+                        <div class="forecast-temp">
+                            {{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°
+                        </div>
+                        <div class="forecast-rain">
+                            {{ day.precipProbability != null ? `降水 ${day.precipProbability}%` : '—' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </NModal>
     </div>
 </template>
 
@@ -239,6 +365,136 @@ const dateStr = new Intl.DateTimeFormat('zh-CN', {
     margin-top: 6px;
     color: var(--fm-text-muted);
     font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+.weather:hover {
+    color: var(--fm-text-secondary);
+}
+.weather-hint {
+    font-size: 13px;
+    color: var(--fm-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.weather-hint.danger {
+    color: #f87171;
+}
+.forecast-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+}
+.forecast-day {
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 12px;
+    background: rgba(148, 163, 184, 0.06);
+    padding: 10px 8px;
+    text-align: center;
+    cursor: pointer;
+    color: inherit;
+}
+.forecast-day:hover {
+    border-color: rgba(20, 184, 166, 0.35);
+}
+.forecast-week {
+    font-size: 13px;
+    font-weight: 700;
+}
+.forecast-desc {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--fm-text-secondary);
+}
+.forecast-temp {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--fm-text-muted);
+}
+.forecast-rain {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--fm-text-faint);
+}
+.weather-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.city-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+}
+.city-tip {
+    font-size: 13px;
+    color: var(--fm-text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.linkish {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--fm-primary, #14b8a6);
+    cursor: pointer;
+    font-size: 13px;
+}
+.linkish:hover {
+    text-decoration: underline;
+}
+.current-block {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(20, 184, 166, 0.1);
+}
+.current-main {
+    font-size: 22px;
+    font-weight: 700;
+}
+.current-meta {
+    margin-top: 6px;
+    display: flex;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--fm-text-muted);
+}
+.modal-forecast {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.modal-day {
+    display: grid;
+    grid-template-columns: 72px 1fr 88px 76px;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 8px;
+    border-radius: 10px;
+    background: rgba(148, 163, 184, 0.08);
+}
+.forecast-date {
+    font-size: 11px;
+    color: var(--fm-text-faint);
+}
+
+@media (max-width: 720px) {
+    .forecast-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .modal-day {
+        grid-template-columns: 64px 1fr;
+        grid-template-rows: auto auto;
+    }
 }
 .avatar {
     cursor: pointer;

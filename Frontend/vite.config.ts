@@ -20,6 +20,13 @@ export default defineConfig({
         host: true,
         port: 5173,
         strictPort: false,
+        /** 同源代理，避免局域网打开页面时浏览器拦截访问 127.0.0.1:8080 */
+        proxy: {
+            '/api': {
+                target: 'http://127.0.0.1:8080',
+                changeOrigin: true,
+            },
+        },
     },
     preview: {
         host: true,

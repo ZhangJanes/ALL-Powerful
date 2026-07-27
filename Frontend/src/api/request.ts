@@ -28,7 +28,8 @@ export type RequestConfig = {
   axiosConfig?: Omit<AxiosRequestConfig, 'url' | 'method' | 'params' | 'data' | 'headers' | 'timeout'>
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080/api'
+/** 开发默认走 Vite 同源代理 /api；生产或显式配置用 VITE_API_BASE_URL */
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api' : 'http://127.0.0.1:8080/api')
 const TOKEN_KEY = 'fm.auth.token'
 
 function readToken() {

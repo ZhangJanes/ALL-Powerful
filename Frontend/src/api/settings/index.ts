@@ -1,9 +1,13 @@
 import { get, put } from '../request'
+import type { WeatherCity } from '@/constants/weatherCities'
+
+export type { WeatherCity }
 
 export type UserSettingsDto = {
   themeMode: string
   themePreset: string
   fontMode: string
+  weatherCity: WeatherCity | string
 }
 
 export type UserSettingsPayload = UserSettingsDto
