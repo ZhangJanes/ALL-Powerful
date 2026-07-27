@@ -10,7 +10,8 @@ public final class SettingsDtos {
     public record SettingsResponse(
             String themeMode,
             String themePreset,
-            String fontMode
+            String fontMode,
+            String weatherCity
     ) {}
 
     public record SettingsUpdateRequest(
@@ -22,6 +23,9 @@ public final class SettingsDtos {
             String themePreset,
             @NotBlank
             @Size(max = 32)
-            String fontMode
+            String fontMode,
+            @NotBlank
+            @Pattern(regexp = "北京|上海|重庆|天津", message = "weatherCity 仅支持 北京/上海/重庆/天津")
+            String weatherCity
     ) {}
 }

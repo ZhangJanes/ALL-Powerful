@@ -1,6 +1,7 @@
 package com.allpowerful.backend.settings;
 
 import com.allpowerful.backend.common.AppException;
+import com.allpowerful.backend.weather.WeatherCities;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,14 +24,21 @@ public class SettingsService {
         return toResponse(getOrCreate(userId));
     }
 
+    @Transactional(readOnly = true)
+    public String getWeatherCity(Long userId) {
+        return getOrCreate(userId).getWeatherCity();
+    }
+
     @Transactional
     public SettingsDtos.SettingsResponse update(Long userId, SettingsDtos.SettingsUpdateRequest req) {
         validatePreset(req.themePreset());
         validateFont(req.fontMode());
+        validateWeatherCity(req.weatherCity());
         UserSettings settings = getOrCreate(userId);
         settings.setThemeMode(req.themeMode());
         settings.setThemePreset(req.themePreset());
         settings.setFontMode(req.fontMode());
+        settings.setWeatherCity(req.weatherCity().trim());
         settings.setUpdatedAt(LocalDateTime.now());
         userSettingsRepository.save(settings);
         return toResponse(settings);
@@ -43,6 +51,7 @@ public class SettingsService {
             settings.setThemeMode("dark");
             settings.setThemePreset("ocean");
             settings.setFontMode("default");
+            settings.setWeatherCity(WeatherCities.DEFAULT_CITY);
             settings.setUpdatedAt(LocalDateTime.now());
             return userSettingsRepository.save(settings);
         });
@@ -60,11 +69,22 @@ public class SettingsService {
         }
     }
 
+    private void validateWeatherCity(String weatherCity) {
+        if (!WeatherCities.isSupported(weatherCity)) {
+            throw new AppException("仅支持城市：北京、上海、重庆、天津");
+        }
+    }
+
     private SettingsDtos.SettingsResponse toResponse(UserSettings settings) {
+        String city = settings.getWeatherCity();
+        if (!WeatherCities.isSupported(city)) {
+            city = WeatherCities.DEFAULT_CITY;
+        }
         return new SettingsDtos.SettingsResponse(
                 settings.getThemeMode(),
                 settings.getThemePreset(),
-                settings.getFontMode()
+                settings.getFontMode(),
+                city
         );
     }
 }

@@ -1,7 +1,17 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Backend (spring-boot:run)" type="MavenRunConfiguration" factoryName="Maven">
     <MavenSettings>
-      <option name="myGeneralSettings" />
+      <option name="myGeneralSettings">
+        <GeneralSettings>
+          <option name="userSettingsFile" value="$PROJECT_DIR$/Backend/.mvn/settings.xml" />
+          <option name="localRepository" value="$USER_HOME$/.m2/repository" />
+        </GeneralSettings>
+      </option>
+      <option name="myRunnerSettings">
+        <RunnerSettings>
+          <option name="jreName" value="homebrew-17" />
+        </RunnerSettings>
+      </option>
     </MavenSettings>
     <option name="workingDir" value="$PROJECT_DIR$/Backend" />
     <option name="goals" value="spring-boot:run -DskipTests" />

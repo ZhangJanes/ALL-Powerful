@@ -27,6 +27,9 @@ public class UserSettings {
     @Column(name = "font_mode", nullable = false, length = 32)
     private String fontMode;
 
+    @Column(name = "weather_city", nullable = false, length = 16)
+    private String weatherCity;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }
