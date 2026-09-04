@@ -18,13 +18,13 @@
         <module name="backend" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel target="17">
-      <module name="backend" target="17" />
+    <bytecodeTargetLevel target="21">
+      <module name="backend" target="21" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="backend" options="-parameters --release 17" />
+      <module name="backend" options="-parameters --release 21" />
     </option>
   </component>
 </project>

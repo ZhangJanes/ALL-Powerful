@@ -41,7 +41,7 @@
 
 | 项 | 说明 |
 | --- | --- |
-| 运行时 | Java 17 + Spring Boot **3.3.5** |
+| 运行时 | Java 21 + Spring Boot **3.3.5** |
 | Web / 安全 | spring-boot-starter-web + Security + **JWT（jjwt 0.12）** |
 | 持久化 | Spring Data JPA + **MyBatis**（复杂查询，如消息聚合）+ **Flyway** |
 | 中间件 | MySQL 8.4、Redis 7.4、Kafka（本地默认 **关闭**，`app.kafka.enabled=false`） |

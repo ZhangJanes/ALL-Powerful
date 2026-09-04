@@ -5,6 +5,7 @@ import {
     DocumentTextOutline,
     WalletOutline,
     CheckboxOutline,
+    NutritionOutline,
     AirplaneOutline,
     BulbOutline,
     ImagesOutline,
@@ -15,6 +16,7 @@ import {
 import { useMemoStore } from '@/stores/memo'
 import { useLedgerStore } from '@/stores/ledger'
 import { useHabitStore } from '@/stores/habit'
+import { useHealthStore } from '@/stores/health'
 import { useMessageStore } from '@/stores/message'
 import { useWeatherStore } from '@/stores/weather'
 import { useSettingsStore } from '@/stores/settings'
@@ -29,6 +31,7 @@ const router = useRouter()
 const memoStore = useMemoStore()
 const ledgerStore = useLedgerStore()
 const habitStore = useHabitStore()
+const healthStore = useHealthStore()
 const messageStore = useMessageStore()
 const weatherStore = useWeatherStore()
 const settingsStore = useSettingsStore()
@@ -53,6 +56,7 @@ const shortcuts = [
     },
     { label: '记账', name: 'ledger', icon: WalletOutline, color: '#f472b6' },
     { label: '打卡', name: 'habits', icon: CheckboxOutline, color: '#34d399' },
+    { label: '健康饮食', name: 'health', icon: NutritionOutline, color: '#2dd4bf' },
     { label: '出行', name: 'travel', icon: AirplaneOutline, color: '#f97316' },
     { label: 'New Idea', name: 'ideas', icon: BulbOutline, color: '#fbbf24' },
     { label: '照片', name: 'photos', icon: ImagesOutline, color: '#0d9488' },
@@ -88,6 +92,9 @@ function goProfile() {
 
 onMounted(() => {
     void weatherStore.syncWeather().catch(() => undefined)
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    void healthStore.syncDashboard(today).catch(() => undefined)
 })
 
 watch(
@@ -166,7 +173,7 @@ watch(
             size="small"
             title="今日速览"
         >
-            <NGrid :cols="4" :x-gap="16" :y-gap="12">
+            <NGrid cols="1 620:3 1000:5" responsive="self" :x-gap="16" :y-gap="12">
                 <NGridItem>
                     <div class="mini" @click="router.push({ name: 'memo' })">
                         <NStatistic
@@ -210,6 +217,15 @@ watch(
                         />
                     </div>
                 </NGridItem>
+                <NGridItem>
+                    <div class="mini" @click="router.push({ name: 'health' })">
+                        <NStatistic
+                            label="饮食进度"
+                            :value="`${healthStore.dashboard?.overallProgressPercent || 0}%`"
+                            tabular-nums
+                        />
+                    </div>
+                </NGridItem>
             </NGrid>
             <div class="trip-line" @click="router.push({ name: 'travel' })">
                 <NTag size="small" type="info" round>出行</NTag>
@@ -241,7 +257,7 @@ watch(
             size="small"
             title="快捷入口"
         >
-            <NGrid :cols="8" :x-gap="16" :y-gap="16">
+            <NGrid cols="2 680:5 1100:9" responsive="self" :x-gap="16" :y-gap="16">
                 <NGridItem v-for="s in shortcuts" :key="s.name">
                     <div
                         class="shortcut"

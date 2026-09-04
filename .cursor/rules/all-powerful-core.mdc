@@ -17,7 +17,7 @@ alwaysApply: true
 ## 架构速记
 
 - `Frontend/`：Vue 3 + Vite + TS + Naive UI + Pinia + Vue Router（history）+ Axios
-- `Backend/`：Spring Boot 3.3 / Java 17 + Security JWT + JPA + MyBatis + Flyway + MySQL；Redis/Kafka 可选
+- `Backend/`：Spring Boot 3.3 / Java 21 + Security JWT + JPA + MyBatis + Flyway + MySQL；Redis/Kafka 可选
 - 包管理：前端 **pnpm**；后端 **Maven**
 - API 前缀：`/api`；统一响应 `{ success, data, message }`
 

@@ -7,6 +7,7 @@ import {
   DocumentTextOutline,
   WalletOutline,
   CheckboxOutline,
+  NutritionOutline,
   AirplaneOutline,
   BulbOutline,
   ImagesOutline,
@@ -29,6 +30,7 @@ type NavKey =
   | 'memo'
   | 'ledger'
   | 'habits'
+  | 'health'
   | 'travel'
   | 'ideas'
   | 'photos'
@@ -45,6 +47,7 @@ const navSections: { title: string; items: { key: NavKey; label: string; route: 
       { key: 'memo', label: '备忘录', route: 'memo', icon: DocumentTextOutline },
       { key: 'ledger', label: '记账', route: 'ledger', icon: WalletOutline },
       { key: 'habits', label: '打卡', route: 'habits', icon: CheckboxOutline },
+      { key: 'health', label: '健康饮食', route: 'health', icon: NutritionOutline },
       { key: 'travel', label: '出行计划', route: 'travel', icon: AirplaneOutline },
       { key: 'ideas', label: 'New Idea', route: 'ideas', icon: BulbOutline },
       { key: 'photos', label: '照片库', route: 'photos', icon: ImagesOutline },

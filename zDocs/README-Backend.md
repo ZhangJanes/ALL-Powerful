@@ -32,7 +32,7 @@
 
 请先确保以下工具可用：
 
-- JDK 17+（建议 17 或 21）
+- JDK 21
 - Maven 3.9+
 - Docker + Docker Compose
 - Node.js + pnpm（仅前端联调时需要）
