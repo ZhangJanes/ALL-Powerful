@@ -116,6 +116,21 @@ onMounted(() => void load())
             <strong>{{ calc?.bmi ?? '—' }}</strong>
             <small>kg/m²</small>
           </div>
+          <div
+            v-if="calc?.bodyFatLevel"
+            class="fat-level"
+            :class="calc.bodyFatLevel.toLowerCase()"
+          >
+            <div>
+              <span>当前体脂阶段</span>
+              <strong>{{ calc.bodyFatLevelLabel }}</strong>
+              <small>
+                {{ calc.effectiveBodyFatPercent }}%
+                · {{ calc.bodyFatSource === 'measured' ? '实测值' : '公式估算值' }}
+              </small>
+            </div>
+            <p>{{ calc.bodyFatAdvice }}</p>
+          </div>
           <div class="result-list">
             <div><span>年龄</span><b>{{ calc?.age != null ? `${calc.age} 岁` : '缺少出生日期' }}</b></div>
             <div><span>当前体脂</span><b>{{ calc?.effectiveBodyFatPercent != null ? `${calc.effectiveBodyFatPercent}%` : '信息不足' }}</b></div>
@@ -145,6 +160,15 @@ onMounted(() => void load())
 .calc-hero { display: grid; place-items: center; min-height: 200px; margin-bottom: 12px; border-radius: 18px; background: radial-gradient(circle,rgba(20,184,166,.18),rgba(37,99,235,.05) 50%,transparent 70%); }
 .calc-hero span,.calc-hero small { color: var(--fm-text-faint); font-size: 11px; letter-spacing: .14em; }
 .calc-hero strong { color: var(--fm-text-strong); font-size: 66px; line-height: 1; letter-spacing: -.06em; }
+.fat-level { display: grid; gap: 12px; margin-bottom: 14px; padding: 17px; border: 1px solid rgba(148,163,184,.18); border-radius: 15px; background: rgba(100,116,139,.07); }
+.fat-level > div { display: grid; gap: 3px; }
+.fat-level span,.fat-level small { color: var(--fm-text-muted); font-size: 11px; }
+.fat-level strong { color: var(--fm-text-strong); font-size: 22px; }
+.fat-level p { margin: 0; color: var(--fm-text-muted); font-size: 12px; line-height: 1.7; }
+.fat-level.low { border-color: rgba(56,189,248,.35); background: rgba(14,165,233,.08); }
+.fat-level.healthy { border-color: rgba(45,212,191,.38); background: rgba(20,184,166,.08); }
+.fat-level.high { border-color: rgba(251,191,36,.38); background: rgba(245,158,11,.08); }
+.fat-level.obese { border-color: rgba(251,113,133,.4); background: rgba(244,63,94,.08); }
 .result-list { display: grid; gap: 1px; overflow: hidden; border-radius: 14px; background: rgba(148,163,184,.1); }
 .result-list > div { display: flex; justify-content: space-between; gap: 14px; padding: 13px 15px; background: color-mix(in srgb,var(--fm-main-bg) 94%,transparent); }
 .result-list span { color: var(--fm-text-muted); font-size: 12px; }

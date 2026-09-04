@@ -38,6 +38,9 @@ public final class HealthDtos {
             Integer calorieSuggestionMin,
             Integer calorieSuggestionMax,
             String bodyFatSource,
+            String bodyFatLevel,
+            String bodyFatLevelLabel,
+            String bodyFatAdvice,
             String notice
     ) {}
 

@@ -80,7 +80,10 @@ onMounted(() => {
           </div>
           <div>
             <span>体脂率</span>
-            <strong>{{ calculations?.effectiveBodyFatPercent != null ? `${calculations.effectiveBodyFatPercent}%` : '—' }}</strong>
+            <strong>
+              {{ calculations?.effectiveBodyFatPercent != null ? `${calculations.effectiveBodyFatPercent}%` : '—' }}
+              <small v-if="calculations?.bodyFatLevelLabel">{{ calculations.bodyFatLevelLabel }}</small>
+            </strong>
           </div>
           <div>
             <span>静息代谢</span>
@@ -183,6 +186,7 @@ onMounted(() => {
 .metric-list > div { display: flex; align-items: baseline; justify-content: space-between; padding: 16px; border-radius: 14px; background: rgba(100, 116, 139, .08); }
 .metric-list span { color: var(--fm-text-muted); font-size: 12px; }
 .metric-list strong { color: var(--fm-text-strong); font-size: 18px; }
+.metric-list strong small { display: block; margin-top: 3px; color: #2dd4bf; font-size: 10px; font-weight: 700; }
 .notice { margin: 18px 0 0; color: var(--fm-text-faint); font-size: 11px; line-height: 1.6; }
 .pulse-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 .pulse-card { display: grid; gap: 9px; padding: 20px; border: 1px solid rgba(148, 163, 184, .12); border-radius: 18px; color: var(--fm-text-primary); text-align: left; cursor: pointer; }

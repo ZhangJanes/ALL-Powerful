@@ -428,10 +428,39 @@ public class HealthService {
             calorieMax = Math.max(rmr, tdee - 300);
         }
         BigDecimal effectiveFat = profile.bodyFatPercent() != null ? profile.bodyFatPercent() : estimatedFat;
+        String fatLevel = null;
+        String fatLevelLabel = null;
+        String fatAdvice = null;
+        if (effectiveFat != null && minFat != null && maxFat != null) {
+            BigDecimal overweightMax;
+            if ("male".equals(profile.gender())) {
+                overweightMax = age < 40 ? bd(25.9) : age < 60 ? bd(28.9) : bd(30.9);
+            } else {
+                overweightMax = age < 40 ? bd(38.9) : age < 60 ? bd(40.9) : bd(42.9);
+            }
+            if (effectiveFat.compareTo(minFat) < 0) {
+                fatLevel = "LOW";
+                fatLevelLabel = "体脂偏低";
+                fatAdvice = "不建议继续减脂；优先保证能量和蛋白质摄入，必要时咨询医生或营养师。";
+            } else if (effectiveFat.compareTo(maxFat) <= 0) {
+                fatLevel = "HEALTHY";
+                fatLevelLabel = "健康范围";
+                fatAdvice = "建议保持规律饮食、充足睡眠和稳定运动，持续观察体重与体脂趋势。";
+            } else if (effectiveFat.compareTo(overweightMax) <= 0) {
+                fatLevel = "HIGH";
+                fatLevelLabel = "体脂偏高";
+                fatAdvice = "建议在医学营养方案下逐步减脂，重点改善饮食执行、饮水和运动完成度。";
+            } else {
+                fatLevel = "OBESE";
+                fatLevelLabel = "肥胖范围";
+                fatAdvice = "建议继续执行医学减重方案，并结合医生或营养师随访，不宜采取极端节食。";
+            }
+        }
         return new HealthDtos.Calculations(
                 age, bmi, estimatedFat, effectiveFat, minFat, maxFat, rmr, tdee,
                 calorieMin, calorieMax,
                 profile.bodyFatPercent() != null ? "measured" : estimatedFat == null ? null : "estimated",
+                fatLevel, fatLevelLabel, fatAdvice,
                 "计算结果仅为成人健康管理估算，不替代体成分检测、医生诊断或图片中的医学营养方案。"
         );
     }

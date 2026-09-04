@@ -12,6 +12,9 @@ export type HealthCalculationsDto = {
   calorieSuggestionMin?: number
   calorieSuggestionMax?: number
   bodyFatSource?: 'measured' | 'estimated'
+  bodyFatLevel?: 'LOW' | 'HEALTHY' | 'HIGH' | 'OBESE'
+  bodyFatLevelLabel?: string
+  bodyFatAdvice?: string
   notice: string
 }
 
