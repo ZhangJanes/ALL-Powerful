@@ -35,6 +35,11 @@ export function getNaiveThemeOverrides(
         primaryColorSuppl: sketchAccent,
         borderRadius: '10px',
         fontFamily: 'var(--fm-font-sans)',
+        fontSize: '14.5px',
+        heightTiny: '28px',
+        heightSmall: '34px',
+        heightMedium: '40px',
+        heightLarge: '46px',
         bodyColor: cream,
         cardColor: paper,
         modalColor: paper,
@@ -60,6 +65,14 @@ export function getNaiveThemeOverrides(
       },
       Button: {
         fontWeight: '700',
+        heightTiny: '28px',
+        heightSmall: '34px',
+        heightMedium: '40px',
+        heightLarge: '46px',
+        borderRadiusTiny: '8px',
+        borderRadiusSmall: '10px',
+        borderRadiusMedium: '12px',
+        borderRadiusLarge: '14px',
         border: `2px solid ${ink}`,
         borderPrimary: `2px solid ${ink}`,
         textColorPrimary: isDark ? '#14532d' : '#ffffff',
@@ -128,8 +141,13 @@ export function getNaiveThemeOverrides(
       primaryColorHover: primary,
       primaryColorPressed: primary,
       primaryColorSuppl: accent,
-      borderRadius: '12px',
+      borderRadius: '14px',
       fontFamily: 'var(--fm-font-sans)',
+      fontSize: '14.5px',
+      heightTiny: '28px',
+      heightSmall: '34px',
+      heightMedium: '40px',
+      heightLarge: '46px',
 
       // 关键：浅色要更“干净”，深色要更“通透”
       bodyColor: isDark ? '#0b1220' : '#f8fafc',
@@ -151,7 +169,7 @@ export function getNaiveThemeOverrides(
     Card: {
       color: isDark ? 'rgba(17, 24, 39, 0.55)' : 'rgba(255, 255, 255, 0.90)',
       borderColor: isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(15, 23, 42, 0.10)',
-      titleFontWeight: '600',
+      titleFontWeight: '700',
     },
     Layout: { color: 'transparent' },
     Tabs:
@@ -187,6 +205,16 @@ export function getNaiveThemeOverrides(
             buttonBorderColorActive: primary,
           }
         : undefined,
-    Button: { fontWeight: '600' },
+    Button: {
+      fontWeight: '600',
+      heightTiny: '28px',
+      heightSmall: '34px',
+      heightMedium: '40px',
+      heightLarge: '46px',
+      borderRadiusTiny: '8px',
+      borderRadiusSmall: '10px',
+      borderRadiusMedium: '12px',
+      borderRadiusLarge: '14px',
+    },
   }
 }

@@ -8,13 +8,10 @@ import {
   DocumentTextOutline,
   ImagesOutline,
   LockClosedOutline,
-  PartlySunnyOutline,
+  NutritionOutline,
   PersonOutline,
   WalletOutline,
 } from '@vicons/ionicons5'
-import FmAntdIllustration from '@/components/illustrations/FmAntdIllustration.vue'
-import { fetchPublicWeatherApi, type WeatherDto } from '@/api/weather'
-import { isWeatherCity, type WeatherCity } from '@/constants/weatherCities'
 import { useAuthStore } from '@/stores/auth'
 
 type AuthMode = 'login' | 'register'
@@ -32,30 +29,167 @@ const confirmPassword = ref('')
 const remember = ref(true)
 const loading = ref(false)
 const now = ref(new Date())
-const weather = ref<WeatherDto | null>(null)
-const weatherError = ref('')
+const sceneIndex = ref(0)
+const paused = ref(false)
+const reduceMotion = ref(false)
+
 let clockTimer: ReturnType<typeof setInterval> | undefined
-let featureTimer: ReturnType<typeof setInterval> | undefined
+let sceneTimer: ReturnType<typeof setInterval> | undefined
+let bubbleId = 1
+const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
 
-function resolveLoginWeatherCity(): WeatherCity {
-  const saved = localStorage.getItem('fm.weather.city')
-  return isWeatherCity(saved) ? saved : '北京'
+type Bubble = {
+  id: number
+  x: number
+  y: number
+  size: number
+  delay: number
+  duration: number
+  path: 1 | 2 | 3 | 4
+  sway: number
+  bursting: boolean
+  spawning: boolean
 }
 
-async function loadTodayWeather() {
-  weatherError.value = ''
-  try {
-    weather.value = await fetchPublicWeatherApi(resolveLoginWeatherCity())
-  } catch (e) {
-    weatherError.value = e instanceof Error ? e.message : '天气暂不可用'
-  }
+function makeBubble(
+  spec: Omit<Bubble, 'id' | 'bursting' | 'spawning'>,
+): Bubble {
+  return { ...spec, id: bubbleId++, bursting: false, spawning: false }
 }
 
-const weatherLine = computed(() => {
-  if (!weather.value) return ''
-  const t = Math.round(weather.value.current.temperature)
-  return `${weather.value.city} · ${weather.value.current.description} ${t}℃`
-})
+function later(fn: () => void, ms: number) {
+  const timer = setTimeout(() => {
+    pendingTimers.delete(timer)
+    fn()
+  }, ms)
+  pendingTimers.add(timer)
+}
+
+function rand(min: number, max: number) {
+  return min + Math.random() * (max - min)
+}
+
+function randInt(min: number, max: number) {
+  return min + Math.floor(Math.random() * (max - min + 1))
+}
+
+const scenes = [
+  {
+    key: 'journal',
+    no: '01',
+    kicker: 'LIFE JOURNAL',
+    title: '一本生活手帐',
+    lead: '一本',
+    before: '生活',
+    accent: '手帐',
+    line: '把备忘、记账、习惯写进同一页纸上。',
+    icon: DocumentTextOutline,
+  },
+  {
+    key: 'health',
+    no: '02',
+    kicker: 'NUTRITION',
+    title: '科学健康饮食',
+    lead: '科学',
+    before: '健康',
+    accent: '饮食',
+    line: '体脂分级、医学方案与每日打卡都落在自己身上。',
+    icon: NutritionOutline,
+  },
+  {
+    key: 'rhythm',
+    no: '03',
+    kicker: 'RHYTHM',
+    title: '账本与坚持',
+    lead: '看得见的',
+    before: '账本',
+    accent: '坚持',
+    line: '预算、打卡、连续天数，让家庭节奏看得见。',
+    icon: WalletOutline,
+  },
+  {
+    key: 'voyage',
+    no: '04',
+    kicker: 'VOYAGE',
+    title: '出行、灵感、相册',
+    lead: '把散落的',
+    before: '灵感',
+    accent: '带上路',
+    line: '行程清单、闪念和新照片，不再散落各处。',
+    icon: AirplaneOutline,
+  },
+  {
+    key: 'vault',
+    no: '05',
+    kicker: 'PRIVATE CLOUD',
+    title: '只属于你们的空间',
+    lead: '只属于',
+    before: '你们的',
+    accent: '空间',
+    line: '独立账户、云端同步，生活数据安静地待在家里。',
+    icon: ImagesOutline,
+  },
+] as const
+
+let fieldGen = 0
+const bubbles = ref<Bubble[]>([])
+
+function rollBubble(spawning = false, fromBottom = false): Bubble {
+  const y = fromBottom ? rand(88, 106) : rand(48, 96)
+  const bubble = makeBubble({
+    x: rand(4, 72),
+    y,
+    size: Math.round(rand(32, 176)),
+    delay: fromBottom ? rand(0, 1.2) : rand(0, 8),
+    duration: Math.max(16, y / 3.1),
+    path: randInt(1, 4) as Bubble['path'],
+    sway: rand(-36, 36),
+  })
+  bubble.spawning = spawning
+  return bubble
+}
+
+function spawnBubble() {
+  const gen = fieldGen
+  const bubble = rollBubble(true, true)
+  bubbles.value = [...bubbles.value, bubble]
+  later(() => {
+    if (fieldGen !== gen) return
+    const found = bubbles.value.find((item) => item.id === bubble.id)
+    if (found) found.spawning = false
+  }, 1100)
+}
+
+function seedField() {
+  fieldGen += 1
+  bubbles.value = Array.from({ length: randInt(5, 8) }, () => rollBubble())
+}
+
+function burstBubble(id: number) {
+  const bubble = bubbles.value.find((item) => item.id === id)
+  if (!bubble || bubble.bursting) return
+  const gen = fieldGen
+  bubble.bursting = true
+  later(() => {
+    if (fieldGen !== gen) return
+    bubbles.value = bubbles.value.filter((item) => item.id !== id)
+    later(() => {
+      if (fieldGen !== gen) return
+      spawnBubble()
+    }, 240 + Math.random() * 640)
+  }, reduceMotion.value ? 200 : 640)
+}
+
+function onRiseEnd(id: number, event: AnimationEvent) {
+  if (!event.animationName.includes('rise')) return
+  if (reduceMotion.value) return
+  burstBubble(id)
+}
+
+seedField()
+
+const activeScene = computed(() => scenes[sceneIndex.value])
+const titleChars = computed(() => Array.from(activeScene.value.title))
 
 watch(
   () => route.name,
@@ -64,19 +198,35 @@ watch(
   },
 )
 
+function nextScene() {
+  if (paused.value || reduceMotion.value) return
+  sceneIndex.value = (sceneIndex.value + 1) % scenes.length
+}
+
+function jumpScene(i: number) {
+  if (sceneIndex.value === i) return
+  sceneIndex.value = i
+  if (!reduceMotion.value) startSceneTimer()
+}
+
+function startSceneTimer() {
+  if (sceneTimer) clearInterval(sceneTimer)
+  sceneTimer = setInterval(nextScene, 7200)
+}
+
 onMounted(() => {
+  reduceMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   clockTimer = setInterval(() => {
     now.value = new Date()
   }, 1000)
-  featureTimer = setInterval(() => {
-    featureIndex.value = (featureIndex.value + 1) % featureCards.length
-  }, 4200)
-  void loadTodayWeather()
+  if (!reduceMotion.value) startSceneTimer()
 })
 
 onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer)
-  if (featureTimer) clearInterval(featureTimer)
+  if (sceneTimer) clearInterval(sceneTimer)
+  pendingTimers.forEach((timer) => clearTimeout(timer))
+  pendingTimers.clear()
 })
 
 const redirectTo = computed(() => {
@@ -89,80 +239,8 @@ const isRegister = computed(() => mode.value === 'register')
 const greeting = computed(() => {
   const h = now.value.getHours()
   const base = h < 6 ? '夜深了' : h < 11 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好'
-  return isRegister.value ? `${base}，欢迎加入` : `${base}，欢迎回来`
+  return isRegister.value ? `${base}，建立家庭空间` : `${base}，欢迎回家`
 })
-
-const timeLine = computed(() =>
-  new Intl.DateTimeFormat('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).format(now.value),
-)
-
-const dateLine = computed(() =>
-  new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  }).format(now.value),
-)
-
-const featureCards = [
-  {
-    icon: DocumentTextOutline,
-    title: '备忘录',
-    desc: '待办提醒 · 云端同步',
-    hint: '支持分类、提醒与快捷记录',
-    metric: '今日清单可视化',
-    points: ['提醒时间管理', '待办完成进度', '快速新增'],
-    color: '#14b8a6',
-  },
-  {
-    icon: WalletOutline,
-    title: '家庭记账',
-    desc: '收支统计 · 预算管理',
-    hint: '每月预算进度一目了然',
-    metric: '预算阈值提醒',
-    points: ['日/周/月统计', '分类占比分析', '导出复盘'],
-    color: '#4f46e5',
-  },
-  {
-    icon: CheckboxOutline,
-    title: '习惯打卡',
-    desc: '坚持记录 · 成就激励',
-    hint: '每日打卡与补卡能力',
-    metric: '连续天数追踪',
-    points: ['打卡日历', '补卡次数控制', '成就解锁'],
-    color: '#0ea5e9',
-  },
-  {
-    icon: AirplaneOutline,
-    title: '出行计划',
-    desc: '行程清单 · 一键备忘',
-    hint: '出发前提醒，避免遗忘',
-    metric: '待办与行程联动',
-    points: ['清单管理', '行程倒计时', '历史归档'],
-    color: '#f97316',
-  },
-  {
-    icon: ImagesOutline,
-    title: '照片库',
-    desc: '分类归档 · 私密保护',
-    hint: '证件、发票、病历安全管理',
-    metric: '敏感文件保护',
-    points: ['分类检索', '隐私访问控制', '资料可追溯'],
-    color: '#0891b2',
-  },
-] as const
-const featureIndex = ref(0)
-const activeFeature = computed(() => featureCards[featureIndex.value])
-
-function jumpFeature(i: number) {
-  featureIndex.value = i
-}
 
 function switchMode(next: AuthMode) {
   if (mode.value === next) return
@@ -243,79 +321,108 @@ const fixedOverrides = {
 
 <template>
   <NConfigProvider :theme="lightTheme" :theme-overrides="fixedOverrides">
-    <div class="auth-page" :data-page="mode">
-      <div class="bg" aria-hidden="true">
-        <div class="bg-orb bg-orb--1" />
-        <div class="bg-orb bg-orb--2" />
-        <div class="bg-orb bg-orb--3" />
+    <div class="auth-page" data-page="auth" :data-mode="mode" :data-scene="activeScene.key">
+      <div class="stage">
+        <article
+          v-for="(scene, i) in scenes"
+          :key="scene.key"
+          class="scene"
+          :class="[`scene--${scene.key}`, { active: i === sceneIndex }]"
+          aria-hidden="true"
+        >
+          <div class="scene-wash" />
+          <div class="scene-orb scene-orb--a" />
+          <div class="scene-orb scene-orb--b" />
+          <div class="scene-orb scene-orb--c" />
+        </article>
+        <div class="stage-veil" aria-hidden="true" />
+        <div class="stage-grain" aria-hidden="true" />
+        <div class="bubble-field">
+          <button
+            v-for="bubble in bubbles"
+            :key="bubble.id"
+            type="button"
+            class="bubble"
+            :class="[
+              `bubble-path--${bubble.path}`,
+              { bursting: bubble.bursting, spawning: bubble.spawning, idle: !bubble.bursting && !bubble.spawning },
+            ]"
+            :style="{
+              left: `${bubble.x}%`,
+              top: `${bubble.y}%`,
+              width: `${bubble.size}px`,
+              height: `${bubble.size}px`,
+              '--start': String(bubble.y),
+              '--sway': `${bubble.sway}px`,
+              '--rise-duration': `${bubble.duration}s`,
+              '--rise-delay': `${bubble.delay}s`,
+              '--fly': `${Math.round(bubble.size * 0.58)}px`,
+            }"
+            aria-label="戳破气泡"
+            :tabindex="bubble.bursting ? -1 : 0"
+            :disabled="bubble.bursting"
+            @click="burstBubble(bubble.id)"
+            @animationend="onRiseEnd(bubble.id, $event)"
+          >
+            <span class="bubble-bob">
+              <i class="bubble-glint" />
+            </span>
+            <i
+              v-for="n in 10"
+              :key="n"
+              class="shard"
+              :style="{ '--i': n }"
+            />
+          </button>
+        </div>
       </div>
 
-      <div class="shell">
-        <!-- 左侧品牌区 -->
+      <header class="topbar">
+        <p class="brand">ALL-POWERFUL</p>
+        <div class="scene-dots" role="tablist" aria-label="背景场景">
+          <button
+            v-for="(scene, i) in scenes"
+            :key="scene.key"
+            type="button"
+            class="scene-dot"
+            :class="{ active: i === sceneIndex }"
+            :aria-label="scene.title"
+            @mouseenter="jumpScene(i)"
+            @focus="jumpScene(i)"
+            @click="jumpScene(i)"
+          />
+        </div>
+      </header>
+
+      <main class="shell">
         <section class="hero">
-          <div class="hero-inner">
-            <div class="brand">
-              <div class="logo">家</div>
-              <div>
-                <div class="title">家庭小管家</div>
-                <div class="tagline">ALL-Powerful · 一家人的生活助手</div>
+          <p class="kicker">{{ greeting }}</p>
+          <Transition name="scene-copy" mode="out-in">
+            <div :key="activeScene.key" class="hero-copy" :class="`tone-${activeScene.key}`">
+              <div class="hero-meta">
+                <b>{{ activeScene.no }}</b>
+                <span>{{ activeScene.kicker }}</span>
               </div>
+              <h1 class="hero-title">
+                <span
+                  v-for="(ch, i) in titleChars"
+                  :key="`${activeScene.key}-${i}`"
+                  class="glyph"
+                  :class="`glyph--${i % 5}`"
+                >{{ ch }}</span>
+              </h1>
+              <p class="hero-line">{{ activeScene.line }}</p>
             </div>
-
-            <div class="greeting-block">
-              <div class="greeting">{{ greeting }}</div>
-              <div class="time-line">{{ timeLine }}</div>
-              <div class="date-line">{{ dateLine }}</div>
-              <div v-if="weatherLine" class="weather-line">
-                <NIcon :component="PartlySunnyOutline" :size="16" />
-                <span>{{ weatherLine }}</span>
-              </div>
-              <div v-else-if="weatherError" class="weather-line muted">今日天气暂不可用</div>
-            </div>
-
-            <div class="feature-carousel">
-              <Transition name="fade-card" mode="out-in">
-                <div
-                  :key="activeFeature.title"
-                  class="feature-card"
-                  :style="{ '--accent': activeFeature.color }"
-                >
-                  <div class="feature-top">
-                    <div class="feature-icon">
-                      <NIcon :component="activeFeature.icon" :size="22" />
-                    </div>
-                    <div class="feature-head">
-                      <div class="feature-label">{{ activeFeature.title }}</div>
-                      <div class="feature-desc">{{ activeFeature.desc }}</div>
-                    </div>
-                    <span class="feature-pill">{{ activeFeature.metric }}</span>
-                  </div>
-                  <div class="feature-hint">{{ activeFeature.hint }}</div>
-                  <div class="feature-points">
-                    <span v-for="p in activeFeature.points" :key="p" class="point-chip">{{ p }}</span>
-                  </div>
-                </div>
-              </Transition>
-              <div class="feature-dots">
-                <button
-                  v-for="(item, idx) in featureCards"
-                  :key="item.title"
-                  class="dot"
-                  :class="{ active: idx === featureIndex }"
-                  type="button"
-                  @click="jumpFeature(idx)"
-                />
-              </div>
-            </div>
-
-            <div class="hero-illustration">
-              <FmAntdIllustration variant="success" :width="200" />
-            </div>
-          </div>
+          </Transition>
+          <ul class="pillars">
+            <li><NIcon :component="DocumentTextOutline" />手帐一体</li>
+            <li><NIcon :component="NutritionOutline" />健康落库</li>
+            <li><NIcon :component="CheckboxOutline" />习惯可追</li>
+            <li><NIcon :component="ImagesOutline" />私密云端</li>
+          </ul>
         </section>
 
-        <!-- 右侧表单：登录 / 注册切换 -->
-        <section class="panel">
+        <section class="panel" @mouseenter="paused = true" @mouseleave="paused = false">
           <NCard class="card" :bordered="false">
             <div class="mode-tabs">
               <button type="button" class="mode-tab" :class="{ active: !isRegister }" @click="switchMode('login')">
@@ -326,512 +433,653 @@ const fixedOverrides = {
               </button>
             </div>
 
-            <Transition name="fade-card" mode="out-in">
-              <div :key="mode" class="form-wrap">
-                <div class="card-head">
-                  <div class="card-title">{{ isRegister ? '创建账号' : '账号登录' }}</div>
-                  <div class="card-sub">
-                    {{ isRegister ? '注册后即可同步数据到云端' : '使用已注册的用户名登录' }}
-                  </div>
+            <Transition name="form-swap" mode="out-in">
+              <div :key="mode" class="form">
+                <h2>{{ isRegister ? '创建账号' : '进入家庭空间' }}</h2>
+                <p class="sub">{{ isRegister ? '注册后自动登录，数据写入云端。' : '一个账号，接住一家人的日常。' }}</p>
+
+                <label class="field">
+                  <span>用户名</span>
+                  <NInput
+                    v-model:value="account"
+                    :placeholder="isRegister ? '至少 3 个字符' : '请输入用户名'"
+                    size="large"
+                    clearable
+                  >
+                    <template #prefix>
+                      <NIcon :component="PersonOutline" class="input-icon" />
+                    </template>
+                  </NInput>
+                </label>
+
+                <label v-if="isRegister" class="field">
+                  <span>昵称（可选）</span>
+                  <NInput v-model:value="displayName" placeholder="默认同用户名" size="large" clearable />
+                </label>
+
+                <label class="field">
+                  <span>密码</span>
+                  <NInput
+                    v-model:value="password"
+                    type="password"
+                    show-password-on="click"
+                    :placeholder="isRegister ? '至少 6 位' : '请输入密码'"
+                    size="large"
+                    @keydown.enter.prevent="!isRegister && submit()"
+                  >
+                    <template #prefix>
+                      <NIcon :component="LockClosedOutline" class="input-icon" />
+                    </template>
+                  </NInput>
+                </label>
+
+                <label v-if="isRegister" class="field">
+                  <span>确认密码</span>
+                  <NInput
+                    v-model:value="confirmPassword"
+                    type="password"
+                    show-password-on="click"
+                    placeholder="再次输入密码"
+                    size="large"
+                    @keydown.enter.prevent="submit"
+                  >
+                    <template #prefix>
+                      <NIcon :component="LockClosedOutline" class="input-icon" />
+                    </template>
+                  </NInput>
+                </label>
+
+                <div class="row">
+                  <NCheckbox v-model:checked="remember">记住我</NCheckbox>
+                  <button v-if="!isRegister" type="button" class="text-btn" @click="message.info('请联系管理员重置密码')">
+                    忘记密码
+                  </button>
                 </div>
 
-                <div class="form">
-                  <div class="field">
-                    <div class="label">用户名</div>
-                    <NInput
-                      v-model:value="account"
-                      :placeholder="isRegister ? '3～64 个字符，用于登录' : '请输入用户名'"
-                      size="large"
-                      clearable
-                    >
-                      <template #prefix>
-                        <NIcon :component="PersonOutline" class="input-icon" />
-                      </template>
-                    </NInput>
-                  </div>
-
-                  <div v-if="isRegister" class="field">
-                    <div class="label">昵称（可选）</div>
-                    <NInput v-model:value="displayName" placeholder="显示名称，默认同用户名" size="large" clearable />
-                  </div>
-
-                  <div class="field">
-                    <div class="label">密码</div>
-                    <NInput
-                      v-model:value="password"
-                      type="password"
-                      show-password-on="click"
-                      :placeholder="isRegister ? '至少 6 位' : '请输入密码'"
-                      size="large"
-                      @keydown.enter.prevent="!isRegister && submit()"
-                    >
-                      <template #prefix>
-                        <NIcon :component="LockClosedOutline" class="input-icon" />
-                      </template>
-                    </NInput>
-                  </div>
-
-                  <div v-if="isRegister" class="field">
-                    <div class="label">确认密码</div>
-                    <NInput
-                      v-model:value="confirmPassword"
-                      type="password"
-                      show-password-on="click"
-                      placeholder="再次输入密码"
-                      size="large"
-                      @keydown.enter.prevent="submit"
-                    >
-                      <template #prefix>
-                        <NIcon :component="LockClosedOutline" class="input-icon" />
-                      </template>
-                    </NInput>
-                  </div>
-
-                  <div class="row">
-                    <NCheckbox v-model:checked="remember">记住我</NCheckbox>
-                    <a
-                      v-if="!isRegister"
-                      class="link"
-                      href="javascript:void(0)"
-                      @click.prevent="message.info('请联系管理员重置密码')"
-                    >
-                      忘记密码？
-                    </a>
-                  </div>
-
-                  <NButton type="primary" size="large" block :loading="loading" @click="submit">
-                    {{ isRegister ? '注册并登录' : '登录' }}
-                  </NButton>
-
-                  <div class="footer-row">
-                    <span class="hint">{{ isRegister ? '已有账号？' : '还没有账号？' }}</span>
-                    <a
-                      class="link strong"
-                      href="javascript:void(0)"
-                      @click.prevent="switchMode(isRegister ? 'login' : 'register')"
-                    >
-                      {{ isRegister ? '去登录' : '立即注册' }}
-                    </a>
-                  </div>
-
-                  <NAlert type="info" :bordered="false" class="tip-alert">
-                    {{
-                      isRegister
-                        ? '注册成功后将自动登录，备忘录等数据将保存至服务端数据库。'
-                        : '首次使用请先注册账号。登录成功后，备忘录等数据将保存至服务端数据库。'
-                    }}
-                  </NAlert>
-                </div>
+                <NButton type="primary" size="large" block :loading="loading" @click="submit">
+                  {{ isRegister ? '注册并进入' : '登录' }}
+                </NButton>
               </div>
             </Transition>
           </NCard>
         </section>
-      </div>
+      </main>
     </div>
   </NConfigProvider>
 </template>
 
 <style scoped>
 .auth-page {
-  min-height: 100vh;
-  width: 100%;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-move: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --copy-kicker: #99f6e4;
+  --copy-lead: rgba(255, 255, 255, 0.55);
+  --copy-main: #f8fafc;
+  --copy-accent: #5eead4;
+  --copy-body: rgba(226, 232, 240, 0.8);
+  --g0: #f8fafc;
+  --g1: #99f6e4;
+  --g2: #5eead4;
+  --g3: #e2e8f0;
+  --g4: #a5f3fc;
   position: relative;
-  background: #f6f8fc;
-  color-scheme: light;
-  overflow-x: hidden;
+  min-height: 100svh;
+  overflow: hidden;
+  color: #f8fafc;
+  background: #07090d;
 }
 
-.bg {
-  position: absolute;
+.auth-page[data-scene='journal'],
+.hero-copy.tone-journal {
+  --copy-kicker: #aecbfa;
+  --copy-lead: rgba(232, 240, 254, 0.64);
+  --copy-main: #e8f0fe;
+  --copy-accent: #fbbc05;
+  --copy-body: rgba(210, 227, 252, 0.88);
+  --g0: #e8f0fe;
+  --g1: #8ab4f8;
+  --g2: #fbbc05;
+  --g3: #aecbfa;
+  --g4: #ea4335;
+}
+
+.auth-page[data-scene='health'],
+.hero-copy.tone-health {
+  --copy-kicker: #a8dab5;
+  --copy-lead: rgba(230, 244, 234, 0.66);
+  --copy-main: #e6f4ea;
+  --copy-accent: #fbbc05;
+  --copy-body: rgba(168, 218, 181, 0.9);
+  --g0: #e6f4ea;
+  --g1: #81c995;
+  --g2: #fbbc05;
+  --g3: #34a853;
+  --g4: #ceead6;
+}
+
+.auth-page[data-scene='rhythm'],
+.hero-copy.tone-rhythm {
+  --copy-kicker: #fde293;
+  --copy-lead: rgba(254, 247, 224, 0.66);
+  --copy-main: #fef7e0;
+  --copy-accent: #ea4335;
+  --copy-body: rgba(253, 226, 147, 0.9);
+  --g0: #fef7e0;
+  --g1: #fbbc05;
+  --g2: #ea4335;
+  --g3: #fde293;
+  --g4: #f9ab00;
+}
+
+.auth-page[data-scene='voyage'],
+.hero-copy.tone-voyage {
+  --copy-kicker: #ffb4a2;
+  --copy-lead: rgba(255, 220, 230, 0.6);
+  --copy-main: #fff0f3;
+  --copy-accent: #f0abfc;
+  --copy-body: rgba(255, 226, 232, 0.84);
+  --g0: #fff0f3;
+  --g1: #ffb4a2;
+  --g2: #f0abfc;
+  --g3: #fb7185;
+  --g4: #e9d5ff;
+}
+
+.auth-page[data-scene='vault'],
+.hero-copy.tone-vault {
+  --copy-kicker: #a5f3fc;
+  --copy-lead: rgba(199, 210, 254, 0.62);
+  --copy-main: #eef2ff;
+  --copy-accent: #818cf8;
+  --copy-body: rgba(199, 210, 254, 0.86);
+  --g0: #eef2ff;
+  --g1: #a5f3fc;
+  --g2: #818cf8;
+  --g3: #c4b5fd;
+  --g4: #67e8f9;
+}
+
+.stage {
+  position: fixed;
   inset: 0;
   pointer-events: none;
-  overflow: hidden;
-  /* 色块更干净：少灰雾，分区清楚 */
-  background:
-    radial-gradient(720px 480px at 6% 8%, rgba(37, 99, 235, 0.12), transparent 58%),
-    radial-gradient(640px 440px at 94% 10%, rgba(13, 148, 136, 0.11), transparent 60%),
-    linear-gradient(165deg, #e8eef6 0%, #eef4f2 42%, #f5f7fa 100%);
-  background-size: 120% 120%;
-  animation: aurora-pan 32s ease-in-out infinite alternate;
 }
 
-.bg-orb {
+.scene {
   position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(1.04);
+  filter: saturate(0.92);
+  transition:
+    opacity 1400ms var(--ease-out),
+    transform 7200ms var(--ease-move),
+    filter 1400ms var(--ease-out);
+}
+
+.scene.active {
+  z-index: 1;
+  opacity: 1;
+  transform: scale(1);
+  filter: saturate(1.08);
+}
+
+.scene-wash,
+.scene-orb {
+  position: absolute;
+  inset: 0;
+}
+
+.scene-orb {
   border-radius: 50%;
-  filter: blur(64px);
-  opacity: 0.12;
+  filter: blur(80px);
+  will-change: transform;
 }
 
-.bg-orb--1 {
-  width: 300px;
-  height: 300px;
-  top: -6%;
-  left: -4%;
-  background: rgba(59, 130, 246, 0.34);
-  animation: orb-float-1 30s ease-in-out infinite;
+.scene--journal .scene-wash {
+  background: linear-gradient(118deg, #0c2340 0%, #174ea6 34%, #4285f4 68%, #8ab4f8 100%);
+  background: linear-gradient(118deg in oklab, #0c2340 0%, #174ea6 34%, #4285f4 68%, #8ab4f8 100%);
+}
+.scene--journal .scene-orb--a { width: 42vw; height: 42vw; left: -8%; top: -18%; background: rgba(66, 133, 244, 0.4); }
+.scene--journal .scene-orb--b { width: 34vw; height: 34vw; right: -6%; bottom: -12%; background: rgba(234, 67, 53, 0.28); }
+.scene--journal .scene-orb--c { width: 22vw; height: 22vw; left: 38%; top: 18%; background: rgba(251, 188, 5, 0.22); }
+
+.scene--health .scene-wash {
+  background: linear-gradient(126deg, #0b2e18 0%, #0d652d 32%, #34a853 62%, #a8dab5 100%);
+  background: linear-gradient(126deg in oklab, #0b2e18 0%, #0d652d 32%, #34a853 62%, #a8dab5 100%);
+}
+.scene--health .scene-orb--a { width: 46vw; height: 46vw; left: -12%; top: -10%; background: rgba(52, 168, 83, 0.34); }
+.scene--health .scene-orb--b { width: 36vw; height: 36vw; right: -10%; bottom: -8%; background: rgba(251, 188, 5, 0.22); }
+.scene--health .scene-orb--c { width: 18vw; height: 18vw; left: 48%; top: 42%; background: rgba(168, 218, 181, 0.24); }
+
+.scene--rhythm .scene-wash {
+  background: linear-gradient(144deg, #3d2200 0%, #f9ab00 36%, #fbbc05 62%, #ea4335 100%);
+  background: linear-gradient(144deg in oklab, #3d2200 0%, #f9ab00 36%, #fbbc05 62%, #ea4335 100%);
+}
+.scene--rhythm .scene-orb--a { width: 40vw; height: 40vw; right: -8%; top: -16%; background: rgba(251, 188, 5, 0.32); }
+.scene--rhythm .scene-orb--b { width: 32vw; height: 32vw; left: -6%; bottom: -10%; background: rgba(234, 67, 53, 0.3); }
+.scene--rhythm .scene-orb--c { width: 20vw; height: 20vw; left: 40%; top: 30%; background: rgba(253, 226, 147, 0.22); }
+
+.scene--voyage .scene-wash {
+  background: linear-gradient(148deg, #1a0b16 0%, #c2410c 36%, #db2777 68%, #4c1d95 100%);
+}
+.scene--voyage .scene-orb--a { width: 44vw; height: 44vw; left: -10%; top: -14%; background: rgba(251, 146, 60, 0.28); }
+.scene--voyage .scene-orb--b { width: 38vw; height: 38vw; right: -12%; bottom: -12%; background: rgba(139, 92, 246, 0.24); }
+.scene--voyage .scene-orb--c { width: 16vw; height: 16vw; left: 52%; top: 20%; background: rgba(244, 114, 182, 0.18); }
+
+.scene--vault .scene-wash {
+  background: linear-gradient(156deg, #020617 0%, #1e1b4b 38%, #6366f1 70%, #22d3ee 100%);
+}
+.scene--vault .scene-orb--a { width: 48vw; height: 48vw; right: -16%; top: -18%; background: rgba(99, 102, 241, 0.28); }
+.scene--vault .scene-orb--b { width: 30vw; height: 30vw; left: -8%; bottom: -8%; background: rgba(34, 211, 238, 0.16); }
+.scene--vault .scene-orb--c { width: 18vw; height: 18vw; left: 36%; top: 28%; background: rgba(165, 180, 252, 0.14); }
+
+.bubble-field {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
-.bg-orb--2 {
-  width: 260px;
-  height: 260px;
-  top: 62%;
-  left: 22%;
-  background: rgba(45, 212, 191, 0.28);
-  animation: orb-float-2 32s ease-in-out infinite;
+.bubble {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transform-origin: center;
 }
 
-.bg-orb--3 {
-  width: 280px;
-  height: 280px;
-  top: 6%;
-  right: -4%;
-  background: rgba(14, 165, 233, 0.26);
-  animation: orb-float-3 28s ease-in-out infinite;
+.bubble.idle {
+  animation: rise var(--rise-duration) linear var(--rise-delay) forwards;
 }
 
-@keyframes aurora-pan {
-  0% {
-    background-position: 8% 20%;
+.bubble.bursting {
+  animation-play-state: paused;
+}
+
+.bubble:not(:disabled) {
+  pointer-events: auto;
+}
+
+.bubble:disabled {
+  cursor: default;
+}
+
+.bubble-bob {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.5), transparent 20%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03));
+  box-shadow:
+    inset -10px -12px 24px rgba(15, 23, 42, 0.12),
+    0 18px 40px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  will-change: transform;
+  transition: transform 220ms var(--ease-out);
+}
+
+.bubble.spawning .bubble-bob {
+  animation: bubble-in 1100ms var(--ease-out) both;
+}
+
+.bubble.bursting .bubble-bob {
+  opacity: 0;
+  transform: scale(0.94);
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+
+.bubble-glint {
+  width: 18%;
+  height: 8%;
+  margin-top: 18%;
+  align-self: start;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  filter: blur(1.5px);
+  transform: rotate(-28deg);
+}
+
+.shard {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18%;
+  height: 18%;
+  border-radius: 58% 42% 62% 38%;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 42%),
+    rgba(255, 255, 255, 0.28);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.shard:nth-child(odd) {
+  width: 12%;
+  height: 22%;
+  border-radius: 40% 70% 30% 60%;
+}
+
+.shard:nth-child(3n) {
+  width: 22%;
+  height: 10%;
+  border-radius: 999px;
+}
+
+.bubble.bursting .shard {
+  animation: shard-fly 480ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 14ms);
+}
+
+.scene.active .scene-orb--a { animation: drift-a 18s var(--ease-move) infinite; }
+.scene.active .scene-orb--b { animation: drift-b 22s var(--ease-move) infinite; }
+.scene.active .scene-orb--c { animation: drift-c 16s var(--ease-move) infinite; }
+
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(28px, 18px, 0); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-24px, -16px, 0); }
+}
+@keyframes drift-c {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(16px, -22px, 0); }
+}
+@keyframes rise {
+  0% { transform: translate3d(0, 0, 0); }
+  38% { transform: translate3d(var(--sway), calc(var(--start) * -0.38vh), 0); }
+  72% { transform: translate3d(calc(var(--sway) * -0.55), calc(var(--start) * -0.72vh), 0); }
+  100% { transform: translate3d(calc(var(--sway) * 0.35), calc(var(--start) * -1vh), 0); }
+}
+@keyframes bubble-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes shard-fly {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
-  100% {
-    background-position: 88% 78%;
+  to {
+    opacity: 0;
+    transform:
+      translate(
+        calc(-50% + cos(calc(var(--i) * 36deg)) * var(--fly)),
+        calc(-50% + sin(calc(var(--i) * 36deg)) * var(--fly))
+      )
+      scale(0.55);
   }
 }
 
-@keyframes orb-float-1 {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(42px, 20px, 0) scale(1.12);
-  }
+.stage-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(7, 9, 13, 0.38) 0%, rgba(7, 9, 13, 0.08) 48%, rgba(7, 9, 13, 0.42) 100%),
+    linear-gradient(180deg, rgba(7, 9, 13, 0.18), transparent 28%, rgba(7, 9, 13, 0.28) 100%);
 }
 
-@keyframes orb-float-2 {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(-36px, -26px, 0) scale(1.08);
-  }
+.stage-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
 }
 
-@keyframes orb-float-3 {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(-24px, 34px, 0) scale(1.1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bg,
-  .bg-orb {
-    animation: none !important;
-  }
-}
-
+.topbar,
 .shell {
   position: relative;
-  z-index: 1;
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 440px);
-  gap: 40px;
-  align-items: center;
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 40px 28px;
+  z-index: 3;
+  pointer-events: none;
 }
 
-.hero-inner {
-  max-width: 520px;
+.brand,
+.scene-dots,
+.panel,
+.kicker,
+.hero-copy,
+.pillars {
+  pointer-events: auto;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 36px 0;
 }
 
 .brand {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.72);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+}
+
+.scene-dots {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
+  pointer-events: auto;
 }
 
-.logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
+.scene-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+  cursor: pointer;
+  transition:
+    width 220ms var(--ease-out),
+    background-color 220ms ease;
+}
+
+.scene-dot.active {
+  width: 28px;
+  height: 8px;
+  background: var(--copy-accent);
+}
+
+.shell {
   display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 22px;
-  color: #fff;
-  background: linear-gradient(135deg, #0d9488, #0284c7);
-  box-shadow: 0 10px 22px rgba(13, 148, 136, 0.28);
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 400px);
+  gap: clamp(32px, 6vw, 80px);
+  align-items: center;
+  min-height: calc(100svh - 72px);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 36px 40px;
 }
 
-.title {
-  font-size: 26px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: 0.02em;
-}
-
-.tagline {
-  font-size: 13px;
-  color: #64748b;
-  margin-top: 4px;
-}
-
-.greeting-block {
-  margin-top: 28px;
-}
-
-.greeting {
-  font-size: 22px;
+.kicker {
+  width: fit-content;
+  margin: 0 0 18px;
+  color: var(--copy-kicker);
+  font-size: 12px;
   font-weight: 700;
-  color: #0f172a;
+  letter-spacing: 0.14em;
+  transition:
+    color 180ms ease,
+    letter-spacing 180ms var(--ease-out),
+    text-shadow 180ms ease;
 }
 
-.time-line {
-  margin-top: 10px;
-  font-size: 40px;
+.hero-copy {
+  max-width: none;
+}
+
+.hero-meta {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  gap: 12px;
+  color: var(--copy-kicker);
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  font-variant-numeric: tabular-nums;
-  color: #0f766e;
-  line-height: 1.1;
+  letter-spacing: 0.18em;
 }
 
-.date-line {
-  margin-top: 8px;
-  font-size: 13px;
-  color: #64748b;
+.hero-meta b {
+  font-family: var(--fm-font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--copy-accent);
+  transition: transform 180ms var(--ease-out), color 180ms ease;
 }
 
-.weather-line {
-  margin-top: 10px;
+.hero-meta span {
+  color: var(--copy-kicker);
+  transition: color 180ms ease, letter-spacing 180ms var(--ease-out);
+}
+
+.hero-meta::after {
+  content: '';
+  width: 36px;
+  height: 1px;
+  background: var(--copy-accent);
+  opacity: 0.55;
+  transition: width 180ms var(--ease-out), opacity 180ms ease;
+}
+
+.hero-title {
+  display: flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  margin: 14px 0 16px;
+  color: var(--copy-main);
+  font-size: clamp(36px, 4.8vw, 68px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.glyph {
+  display: inline-block;
+  color: var(--g0);
+  cursor: default;
+  text-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+  transition:
+    transform 180ms var(--ease-out),
+    color 180ms ease,
+    text-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.glyph--0 { color: var(--g0); }
+.glyph--1 { color: var(--g1); }
+.glyph--2 { color: var(--g2); }
+.glyph--3 { color: var(--g3); }
+.glyph--4 { color: var(--g4); }
+
+.hero-copy.tone-journal .hero-title {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.hero-copy.tone-health .hero-title {
+  letter-spacing: -0.06em;
+}
+
+.hero-copy.tone-rhythm .hero-title {
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.hero-copy.tone-voyage .hero-title {
+  font-style: italic;
+}
+
+.hero-copy.tone-vault .hero-title {
+  letter-spacing: -0.03em;
+}
+
+.hero-line {
+  max-width: 28ch;
+  margin: 0;
+  color: var(--copy-body);
+  font-size: 16px;
+  line-height: 1.7;
+  transition: color 180ms ease, transform 180ms var(--ease-out);
+}
+
+.pillars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 480px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pillars li {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #0f766e;
-}
-
-.weather-line.muted {
-  font-weight: 500;
-  color: #94a3b8;
-}
-
-.hero-desc {
-  margin: 18px 0 0;
-  font-size: 14px;
-  line-height: 1.65;
-  color: rgba(30, 41, 59, 0.9);
-}
-
-.feature-carousel {
-  margin-top: 24px;
-  max-width: 440px;
-}
-
-.feature-card {
-  --accent: #0d9488;
-  position: relative;
-  min-height: 186px;
-  padding: 20px 20px 18px 22px;
-  border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow:
-    0 14px 32px rgba(15, 23, 42, 0.1),
-    0 2px 8px rgba(15, 23, 42, 0.05);
-  overflow: hidden;
-}
-
-.feature-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 5px;
-  background: var(--accent);
-}
-
-.feature-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    125deg,
-    color-mix(in srgb, var(--accent) 7%, transparent) 0%,
-    transparent 42%
-  );
-  pointer-events: none;
-}
-
-.feature-top {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: start;
-}
-
-.feature-icon {
-  position: relative;
-  z-index: 1;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  color: #fff;
-  background: var(--accent);
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-
-.feature-head {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-}
-
-.feature-label {
-  font-size: 17px;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.3;
-}
-
-.feature-desc {
-  margin-top: 4px;
-  font-size: 13px;
-  color: #475569;
-  line-height: 1.45;
-}
-
-.feature-pill {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  height: 26px;
-  padding: 0 11px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-  color: #fff;
-  background: var(--accent);
-}
-
-.feature-hint {
-  position: relative;
-  z-index: 1;
-  margin-top: 16px;
-  font-size: 13px;
-  color: #334155;
-  line-height: 1.55;
-}
-
-.feature-points {
-  position: relative;
-  z-index: 1;
-  margin-top: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.point-chip {
-  font-size: 12px;
-  font-weight: 600;
-  color: #0f172a;
-  padding: 6px 11px;
-  border-radius: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-}
-
-.feature-dots {
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
+  padding: 7px 11px;
+  border: 1px solid color-mix(in srgb, var(--copy-accent) 32%, transparent);
   border-radius: 999px;
-  border: 0;
-  background: #cbd5e1;
-  transition: all 0.22s ease;
-  cursor: pointer;
-  padding: 0;
-}
-
-.dot.active {
-  width: 22px;
-  background: #0f766e;
-}
-
-.fade-card-enter-active,
-.fade-card-leave-active {
-  transition: opacity 0.42s ease, transform 0.42s ease;
-}
-.fade-card-enter-from {
-  opacity: 0;
-  transform: translateY(6px);
-}
-.fade-card-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-
-.trust-row {
-  margin-top: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.hero-illustration {
-  margin-top: 24px;
-}
-
-.panel {
-  width: 100%;
+  background: color-mix(in srgb, var(--copy-accent) 10%, rgba(255, 255, 255, 0.06));
+  backdrop-filter: blur(16px);
+  color: var(--copy-main);
+  font-size: 12px;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms var(--ease-out);
 }
 
 .card {
-  border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
   box-shadow:
-    0 18px 40px rgba(15, 23, 42, 0.1),
-    0 4px 12px rgba(15, 23, 42, 0.05);
-  background: #ffffff;
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 30px 80px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
 }
 
-.card-head {
-  margin-bottom: 4px;
+.card :deep(.n-card__content) {
+  padding: 22px;
 }
 
 .mode-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 4px;
+  margin-bottom: 18px;
   padding: 4px;
-  margin-bottom: 14px;
   border-radius: 12px;
-  background: rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.06);
 }
 
 .mode-tab {
@@ -839,123 +1087,228 @@ const fixedOverrides = {
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: rgba(71, 85, 105, 0.92);
+  color: #64748b;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
 }
 
 .mode-tab.active {
   background: #fff;
-  color: rgba(15, 23, 42, 0.95);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-}
-
-.form-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.card-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: rgba(15, 23, 42, 0.92);
-}
-
-.card-sub {
-  margin-top: 4px;
-  font-size: 13px;
-  color: rgba(71, 85, 105, 0.92);
+  color: #0f172a;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
 }
 
 .form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  gap: 12px;
 }
 
-.field .label {
+.form h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.sub {
+  margin: -4px 0 4px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field span {
+  color: #334155;
   font-size: 12px;
   font-weight: 700;
-  color: rgba(30, 41, 59, 0.92);
-  margin-bottom: 6px;
 }
 
 .input-icon {
-  color: rgba(100, 116, 139, 0.85);
+  color: #94a3b8;
 }
 
 .row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
 }
 
-.footer-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-}
-
-.link {
+.text-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #0f766e;
   font-size: 12px;
-  color: rgba(2, 132, 199, 0.95);
-  text-decoration: none;
   cursor: pointer;
 }
 
-.link:hover {
-  text-decoration: underline;
+.card :deep(.n-button--primary-type) {
+  min-height: 46px;
+  margin-top: 4px;
+  background: linear-gradient(110deg, #0f766e, #0e7490);
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.2);
 }
 
-.link.strong {
-  font-weight: 700;
+.scene-copy-enter-active,
+.scene-copy-leave-active,
+.form-swap-enter-active,
+.form-swap-leave-active {
+  transition: opacity 280ms var(--ease-out), transform 280ms var(--ease-out);
 }
 
-.hint {
-  font-size: 12px;
-  color: rgba(100, 116, 139, 0.9);
+.scene-copy-enter-from {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+}
+.scene-copy-leave-to {
+  opacity: 0;
+  transform: translate3d(0, -8px, 0);
+}
+.form-swap-enter-from,
+.form-swap-leave-to {
+  opacity: 0;
+  transform: translate3d(0, 8px, 0);
 }
 
-.tip-alert {
-  border-radius: 12px;
-  font-size: 12px;
+@media (hover: hover) and (pointer: fine) {
+  .scene-dot:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.7);
+  }
+  .mode-tab:hover:not(.active) {
+    color: #0f172a;
+  }
+  .card :deep(.n-button--primary-type:active) {
+    transform: scale(0.985);
+  }
+  .bubble:hover:not(.bursting) .bubble-bob {
+    transform: scale(1.04);
+  }
+  .bubble:active:not(.bursting) .bubble-bob {
+    transform: scale(0.98);
+  }
+  .kicker:hover {
+    color: var(--copy-accent);
+    letter-spacing: 0.22em;
+    text-shadow: 0 0 18px color-mix(in srgb, var(--copy-accent) 55%, transparent);
+  }
+  .hero-meta:hover b {
+    transform: translate3d(0, -3px, 0);
+    color: #fff;
+  }
+  .hero-meta:hover span {
+    letter-spacing: 0.28em;
+    color: var(--copy-accent);
+  }
+  .hero-meta:hover::after {
+    width: 72px;
+    opacity: 1;
+  }
+  .glyph--0:hover {
+    transform: translate3d(0, -8px, 0);
+    text-shadow: 0 12px 28px color-mix(in srgb, var(--g0) 55%, transparent);
+  }
+  .glyph--1:hover {
+    transform: scale(1.16) rotate(-8deg);
+    color: #fff;
+  }
+  .glyph--2:hover {
+    transform: translate3d(0, -4px, 0) scale(1.08);
+    color: #fff;
+    text-shadow:
+      0 0 12px var(--g2),
+      0 0 28px color-mix(in srgb, var(--g2) 70%, transparent);
+  }
+  .glyph--3:hover {
+    transform: skewX(-10deg) translate3d(0, -3px, 0);
+    color: var(--copy-accent);
+  }
+  .glyph--4:hover {
+    transform: scale(1.2);
+    filter: brightness(1.25);
+    text-shadow: 0 0 22px var(--g4);
+  }
+  .hero-copy.tone-journal .glyph--1:hover {
+    transform: rotate(-12deg) translate3d(0, -6px, 0);
+  }
+  .hero-copy.tone-health .glyph--4:hover {
+    transform: scale(1.28) rotate(6deg);
+  }
+  .hero-copy.tone-rhythm .glyph--0:hover {
+    transform: translate3d(0, -12px, 0);
+  }
+  .hero-copy.tone-voyage .glyph--3:hover {
+    transform: skewX(-16deg) rotate(4deg);
+  }
+  .hero-copy.tone-vault .glyph--2:hover {
+    text-shadow:
+      0 0 10px #fff,
+      0 0 24px var(--g2),
+      0 0 42px var(--g1);
+  }
+  .hero-line:hover {
+    color: var(--copy-main);
+    transform: translate3d(6px, 0, 0);
+  }
+  .pillars li:hover {
+    border-color: color-mix(in srgb, var(--copy-accent) 70%, transparent);
+    background: color-mix(in srgb, var(--copy-accent) 22%, rgba(255, 255, 255, 0.08));
+    transform: translate3d(0, -2px, 0);
+  }
 }
 
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;
-    gap: 24px;
-    padding: 24px 16px 32px;
-    align-items: start;
+    min-height: auto;
+    padding: 24px 20px 32px;
   }
-
-  .hero-inner {
+  .panel {
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .hero-copy {
     max-width: none;
   }
+  .hero-title {
+    max-width: none;
+    font-size: clamp(34px, 9vw, 52px);
+  }
+}
 
-  .hero-illustration {
+@media (prefers-reduced-motion: reduce) {
+  .scene,
+  .bubble,
+  .bubble-bob,
+  .scene-dot,
+  .mode-tab,
+  .scene-copy-enter-active,
+  .scene-copy-leave-active,
+  .form-swap-enter-active,
+  .form-swap-leave-active,
+  .glyph,
+  .kicker,
+  .hero-line,
+  .hero-meta b,
+  .pillars li {
+    transition: opacity 200ms ease, color 200ms ease;
+    animation: none !important;
+    transform: none !important;
+  }
+  .scene:not(.active) {
+    opacity: 0;
+  }
+  .shard {
     display: none;
   }
-
-  .feature-carousel {
-    max-width: none;
-  }
-
-  .greeting {
-    font-size: 20px;
-  }
-
-  .time-line {
-    font-size: 32px;
-  }
-
-  .title {
-    font-size: 22px;
+  .bubble.bursting .bubble-bob {
+    opacity: 0;
   }
 }
 </style>

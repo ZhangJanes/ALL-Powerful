@@ -6,9 +6,9 @@ html[data-preset='sketch'] {
   /* 浅咖描边：比纯黑更「手帐 / 卡哇伊」，少突兀 */
   --sk-ui-ink: #4a3f36;
   --sk-ui-pop: rgba(74, 63, 54, 0.88);
-  --sk-shadow-sm: 3px 3px 0;
-  --sk-shadow-md: 4px 4px 0;
-  --sk-shadow-lg: 5px 5px 0;
+  --sk-shadow-sm: 2px 2px 0;
+  --sk-shadow-md: 3px 3px 0;
+  --sk-shadow-lg: 4px 4px 0;
   --fm-chart-bg: rgba(255, 252, 248, 0.97);
   --fm-chart-border: var(--sk-ui-ink);
   --fm-chart-shadow: var(--sk-shadow-sm) var(--sk-ui-pop);
@@ -29,7 +29,7 @@ html[data-preset='sketch'][data-theme='dark'] {
 
 /* 主内容区：奶白纸感 + 轻圆角，弱化「控制台」感 */
 html[data-preset='sketch'] .main-flow {
-  border-radius: 20px !important;
+  border-radius: 18px !important;
   border: 2px solid rgba(74, 63, 54, 0.22) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
@@ -40,7 +40,7 @@ html[data-preset='sketch'][data-theme='dark'] .main-flow {
 
 html[data-preset='sketch'] .page-title {
   font-weight: 800 !important;
-  letter-spacing: 0.03em !important;
+  letter-spacing: -0.01em !important;
 }
 
 html[data-preset='sketch'] .subtle {
@@ -104,7 +104,7 @@ html[data-preset='sketch'][data-theme='dark'] .brand-sub {
 html[data-preset='sketch'] .glass:not(.n-card) {
   border: 2px solid var(--sk-ui-ink) !important;
   box-shadow: var(--sk-shadow-md) var(--sk-ui-pop) !important;
-  border-radius: 18px !important;
+  border-radius: 16px !important;
   background: rgba(255, 252, 248, 0.96) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -117,26 +117,26 @@ html[data-preset='sketch'][data-theme='dark'] .glass:not(.n-card) {
 html[data-preset='sketch'] .n-card {
   border: 2px solid var(--sk-ui-ink) !important;
   box-shadow: var(--sk-shadow-md) var(--sk-ui-pop) !important;
-  border-radius: 18px !important;
+  border-radius: 16px !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
 html[data-preset='sketch'] .n-card .n-card-header .n-card-header__main {
   font-weight: 800 !important;
-  letter-spacing: 0.03em !important;
+  letter-spacing: 0 !important;
   font-size: 1.02em !important;
 }
 
 html[data-preset='sketch'] .n-button {
-  border-radius: 14px !important;
+  border-radius: 12px !important;
 }
 
 /* 侧栏 */
 html[data-preset='sketch'] .side-rail {
   border: 2px solid var(--sk-ui-ink) !important;
   box-shadow: var(--sk-shadow-lg) var(--sk-ui-pop) !important;
-  border-radius: 20px !important;
+  border-radius: 18px !important;
 }
 
 html[data-preset='sketch'] .sec + .sec {
@@ -209,13 +209,13 @@ html[data-preset='sketch'] .n-input,
 html[data-preset='sketch'] .n-input-number {
   border: 2px solid var(--sk-ui-ink) !important;
   box-shadow: var(--sk-shadow-sm) var(--sk-ui-pop) !important;
-  border-radius: 14px !important;
+  border-radius: 12px !important;
 }
 
 html[data-preset='sketch'] .n-base-selection {
   border: 2px solid var(--sk-ui-ink) !important;
   box-shadow: var(--sk-shadow-sm) var(--sk-ui-pop) !important;
-  border-radius: 14px !important;
+  border-radius: 12px !important;
 }
 
 html[data-preset='sketch'] .n-auto-complete .n-input {
@@ -226,7 +226,7 @@ html[data-preset='sketch'] .n-auto-complete .n-input {
 html[data-preset='sketch'] .n-list.n-list--bordered {
   border: 2px solid var(--sk-ui-ink) !important;
   box-shadow: var(--sk-shadow-md) var(--sk-ui-pop) !important;
-  border-radius: 16px !important;
+  border-radius: 14px !important;
 }
 
 html[data-preset='sketch'] .n-list-item:not(:last-child) {
@@ -254,10 +254,10 @@ html[data-preset='sketch'] .n-tag {
   box-sizing: border-box !important;
   /* 粗描边 + 默认 line-height:1 易把中文挤扁，略增垂直内边距与行高 */
   height: auto !important;
-  min-height: calc(var(--n-height) + 6px) !important;
+  min-height: calc(var(--n-height) + 4px) !important;
   line-height: 1.35 !important;
-  padding-top: 3px !important;
-  padding-bottom: 3px !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
 }
 
 html[data-preset='sketch'] .n-avatar {
@@ -287,9 +287,9 @@ html[data-preset='sketch'] .n-empty__description {
 /* 选项卡外框 */
 html[data-preset='sketch'] .n-tabs-nav {
   border: 2px solid var(--sk-ui-ink) !important;
-  border-radius: 16px !important;
+  border-radius: 14px !important;
   box-shadow: var(--sk-shadow-sm) var(--sk-ui-pop) !important;
-  padding: 6px 8px !important;
+  padding: 5px 7px !important;
   background: rgba(255, 252, 248, 0.55) !important;
 }
 
@@ -326,7 +326,7 @@ html[data-preset='sketch'] .n-divider:not(.n-divider--vertical) .n-divider__line
 html[data-preset='sketch'] .n-alert {
   border: 2px solid var(--sk-ui-ink) !important;
   box-shadow: var(--sk-shadow-sm) var(--sk-ui-pop) !important;
-  border-radius: 16px !important;
+  border-radius: 14px !important;
 }
 
 /* 下拉菜单 / 选择面板 */
@@ -339,7 +339,7 @@ html[data-preset='sketch'] .n-base-select-menu {
 
 /* 首页等：统计小块、快捷入口、图表标题、图表容器 */
 html[data-preset='sketch'] .mini {
-  padding: 10px 12px !important;
+  padding: 8px 10px !important;
   margin: 2px 0;
   border-radius: 14px !important;
   transition: background 0.2s ease;
@@ -347,6 +347,21 @@ html[data-preset='sketch'] .mini {
 
 html[data-preset='sketch'] .mini:hover {
   background: rgba(252, 231, 243, 0.38) !important;
+}
+
+html[data-preset='sketch'] .forecast-day {
+  border: 2px solid var(--sk-ui-ink) !important;
+  box-shadow: var(--sk-shadow-sm) var(--sk-ui-pop);
+  background: rgba(255, 252, 248, 0.82) !important;
+}
+
+html[data-preset='sketch'][data-theme='dark'] .forecast-day {
+  background: rgba(52, 46, 42, 0.78) !important;
+}
+
+html[data-preset='sketch'] .forecast-day:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--sk-shadow-md) var(--sk-ui-pop);
 }
 
 html[data-preset='sketch'][data-theme='dark'] .mini:hover {
@@ -395,6 +410,21 @@ html[data-preset='sketch'] .fm-chart-block {
   border-width: 2px !important;
   border-color: var(--sk-ui-ink) !important;
   box-shadow: var(--sk-shadow-sm) var(--sk-ui-pop) !important;
+}
+
+html[data-preset='sketch'] .fm-card-tile {
+  border: 2px solid var(--sk-ui-ink) !important;
+  box-shadow: var(--sk-shadow-md) var(--sk-ui-pop) !important;
+}
+
+html[data-preset='sketch'] .fm-card-tile::after {
+  display: none;
+}
+
+html[data-preset='sketch'] .fm-card-tile:hover {
+  transform: translate(-1px, -1px) rotate(-0.12deg);
+  border-color: var(--sk-ui-ink) !important;
+  box-shadow: var(--sk-shadow-lg) var(--sk-ui-pop) !important;
 }
 
 html[data-preset='sketch'] .trip-line {
@@ -485,6 +515,13 @@ html[data-preset='sketch'][data-theme='light'] .sk-nav--habits {
   --sk-candy-ink: #713f12;
   --sk-candy-text: #854d0e;
 }
+html[data-preset='sketch'][data-theme='light'] .sk-nav--health {
+  --sk-candy-idle: rgba(207, 250, 254, 0.94);
+  --sk-candy-hover: rgba(165, 243, 252, 0.98);
+  --sk-candy-active: #0891b2;
+  --sk-candy-ink: #164e63;
+  --sk-candy-text: #155e75;
+}
 html[data-preset='sketch'][data-theme='light'] .sk-nav--travel {
   --sk-candy-idle: rgba(255, 237, 213, 0.92);
   --sk-candy-hover: rgba(254, 215, 170, 0.98);
@@ -569,6 +606,14 @@ html[data-preset='sketch'][data-theme='dark'] .sk-nav--habits {
   --sk-candy-text: #fef9c3;
   --sk-candy-on: #422006;
 }
+html[data-preset='sketch'][data-theme='dark'] .sk-nav--health {
+  --sk-candy-idle: rgba(22, 78, 99, 0.48);
+  --sk-candy-hover: rgba(21, 94, 117, 0.66);
+  --sk-candy-active: #22d3ee;
+  --sk-candy-ink: #cffafe;
+  --sk-candy-text: #cffafe;
+  --sk-candy-on: #083344;
+}
 html[data-preset='sketch'][data-theme='dark'] .sk-nav--travel {
   --sk-candy-idle: rgba(124, 45, 18, 0.4);
   --sk-candy-hover: rgba(124, 45, 18, 0.55);
@@ -632,25 +677,8 @@ html[data-preset='sketch'] .n-badge-sup {
   border-radius: 999px !important;
 }
 
-/* 登录页（独立路由，带 data-page） */
-html[data-preset='sketch'] [data-page='login'] {
-  background: #faf6ef !important;
-}
-
-html[data-preset='sketch'] [data-page='login'] .bg {
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cg fill='none' stroke='%23c4a574' stroke-width='1.2' opacity='0.35'%3E%3Cpath d='M12 24l14 18M130 20l16-10M88 140q12 14-8 18'/%3E%3Ccircle cx='48' cy='52' r='3'/%3E%3C/g%3E%3C/svg%3E")
-      repeat left top / 180px 180px,
-    linear-gradient(168deg, #faf6ef 0%, #f3ead6 50%, #faf8f2 100%) !important;
-  filter: none;
-}
-
-html[data-preset='sketch'] [data-page='login'] .card.n-card {
+html[data-preset='sketch'] [data-page='auth'] .card.n-card {
   border: 2px solid var(--sk-ui-ink) !important;
   box-shadow: var(--sk-shadow-md) var(--sk-ui-pop) !important;
-}
-
-html[data-preset='sketch'] [data-page='login'] .logo {
-  border: 2px solid var(--sk-ui-ink);
-  box-shadow: var(--sk-shadow-sm) var(--sk-ui-pop);
+  background: rgba(255, 252, 248, 0.9) !important;
 }

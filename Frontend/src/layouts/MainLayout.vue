@@ -87,9 +87,9 @@ watch(
 )
 
 // 折叠宽度
-const railWidth = computed(() => (collapsed.value ? 60 : 216))
+const railWidth = computed(() => (collapsed.value ? 56 : 208))
 // 折叠隐藏后不额外占位：仅使用 shell 的 padding 作为左右留白
-const mainOffset = computed(() => (collapsed.value ? 0 : railWidth.value + 40))
+const mainOffset = computed(() => (collapsed.value ? 0 : railWidth.value + 34))
 </script>
 
 <template>
@@ -177,8 +177,8 @@ const mainOffset = computed(() => (collapsed.value ? 0 : railWidth.value + 40))
   display: flex;
   align-items: stretch;
   box-sizing: border-box;
-  padding: 20px 24px;
-  gap: 20px;
+  padding: 16px 18px;
+  gap: 16px;
   /* 锁定为视口高度，滚动只发生在 .main-flow，避免整页滚动与 fixed 侧栏错位 */
   height: 100vh;
   max-height: 100vh;
@@ -187,9 +187,9 @@ const mainOffset = computed(() => (collapsed.value ? 0 : railWidth.value + 40))
 
 .rail-wrap {
   position: fixed;
-  left: 20px;
-  top: 20px;
-  bottom: 20px; /* 与顶部间距一致 */
+  left: 16px;
+  top: 16px;
+  bottom: 16px; /* 与顶部间距一致 */
   height: auto;
   z-index: 60;
 }
@@ -237,7 +237,7 @@ const mainOffset = computed(() => (collapsed.value ? 0 : railWidth.value + 40))
   width: var(--fm-rail-w, 256px);
   display: flex;
   flex-direction: column;
-  padding: 22px 12px 18px;
+  padding: 18px 10px 14px;
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.16);
   background: transparent;
@@ -393,32 +393,32 @@ const mainOffset = computed(() => (collapsed.value ? 0 : railWidth.value + 40))
 .rail-scroll {
   flex: 1;
   min-height: 0;
-  max-height: calc(100vh - 40px - 120px);
+  max-height: calc(100vh - 32px - 108px);
 }
 
 .sec + .sec {
-  margin-top: 14px;
-  padding-top: 12px;
+  margin-top: 11px;
+  padding-top: 10px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .sec-title {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--fm-text-label);
-  padding: 0 12px 10px;
+  padding: 0 10px 8px;
 }
 
 .side-item {
   justify-content: flex-start;
   margin-bottom: 2px;
   height: auto;
-  min-height: 48px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  font-weight: 500;
+  min-height: 44px;
+  padding: 7px 9px;
+  border-radius: 11px;
+  font-weight: 600;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -431,7 +431,7 @@ const mainOffset = computed(() => (collapsed.value ? 0 : railWidth.value + 40))
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
   height: 100%;
 }
@@ -442,7 +442,7 @@ const mainOffset = computed(() => (collapsed.value ? 0 : railWidth.value + 40))
 
 .side-rail.collapsed .side-item {
   padding: 0;
-  min-height: 54px;
+  min-height: 48px;
 }
 
 .side-rail.collapsed .side-item :deep(.n-button__content) {
@@ -478,7 +478,7 @@ const mainOffset = computed(() => (collapsed.value ? 0 : railWidth.value + 40))
   flex: 1;
   min-width: 0;
   min-height: 0;
-  border-radius: 16px;
+  border-radius: var(--fm-radius-lg);
   border: 1px solid var(--fm-main-border, rgba(148, 163, 184, 0.1));
   background: var(--fm-main-bg, rgba(10, 16, 28, 0.35));
   overflow: auto;

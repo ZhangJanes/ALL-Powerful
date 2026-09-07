@@ -16,11 +16,11 @@ onMounted(() => void store.syncPlan())
 </script>
 
 <template>
-  <div class="app-shell page">
+  <div class="app-shell page health-page">
     <HealthModuleNav title="医学营养减重方案" eyebrow="MEDICAL PLAN / SOURCE RECORD" />
 
     <NSpin :show="store.loading">
-      <template v-if="store.plan">
+      <div v-if="store.plan" class="plan-content">
         <section class="plan-hero glass">
           <div>
             <span class="source-pill"><NIcon :component="ShieldCheckmarkOutline" /> 图片原文方案</span>
@@ -98,37 +98,40 @@ onMounted(() => void store.syncPlan())
             </NCard>
           </div>
         </section>
-      </template>
+      </div>
       <NEmpty v-else-if="!store.loading" description="当前账户没有生效中的医学方案" />
     </NSpin>
   </div>
 </template>
 
 <style scoped>
-.plan-hero { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: 30px; border: 1px solid rgba(45,212,191,.18); border-radius: 22px; background: radial-gradient(circle at 90% 10%, rgba(14,165,233,.14), transparent 32%); }
+.plan-content { display: flex; flex-direction: column; gap: 24px; }
+:deep(.n-spin-container),
+:deep(.n-spin-content) { width: 100%; }
+.plan-hero { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 24px; border: 1px solid rgba(45,212,191,.18); border-radius: var(--fm-radius-xl); background: radial-gradient(circle at 90% 10%, rgba(14,165,233,.14), transparent 32%); }
 .source-pill { display: inline-flex; align-items: center; gap: 6px; color: #2dd4bf; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
 .plan-hero h2 { margin: 12px 0 8px; color: var(--fm-text-strong); font-size: clamp(28px,4vw,46px); letter-spacing: -.04em; }
 .plan-hero p,.followup p { margin: 0; max-width: 720px; color: var(--fm-text-muted); line-height: 1.7; }
-.review-date { display: grid; min-width: 180px; gap: 5px; padding: 18px; border-radius: 16px; background: rgba(139,92,246,.13); color: var(--fm-text-muted); }
+.review-date { display: grid; min-width: 180px; gap: 5px; padding: 15px; border-radius: var(--fm-radius-md); background: rgba(139,92,246,.13); color: var(--fm-text-muted); }
 .review-date strong { color: var(--fm-text-strong); font-size: 21px; }
-.plan-card { border-radius: 20px; }
+.plan-card { border-radius: var(--fm-radius-lg); }
 .meal-tabs { display: grid; grid-template-columns: repeat(5,1fr); gap: 7px; padding: 5px; border-radius: 14px; background: rgba(100,116,139,.08); }
 .meal-tabs button { padding: 11px; border: 0; border-radius: 10px; background: transparent; color: var(--fm-text-muted); font: inherit; cursor: pointer; }
 .meal-tabs button.active { color: #ecfeff; background: linear-gradient(135deg,#0f766e,#2563eb); box-shadow: 0 8px 20px rgba(37,99,235,.18); }
 .meal-sheet { display: grid; gap: 1px; margin-top: 16px; overflow: hidden; border-radius: 15px; background: rgba(148,163,184,.1); }
-.food-row { display: grid; grid-template-columns: 1fr auto; gap: 10px 20px; padding: 17px 20px; background: color-mix(in srgb, var(--fm-main-bg) 92%, transparent); }
+.food-row { display: grid; grid-template-columns: 1fr auto; gap: 9px 18px; padding: 14px 17px; background: color-mix(in srgb, var(--fm-main-bg) 92%, transparent); }
 .food-row > div { display: flex; gap: 14px; }
 .food-row span { color: var(--fm-text-faint); font-size: 10px; letter-spacing: .12em; }
 .food-row b,.food-row strong { color: var(--fm-text-strong); }
 .food-row p { grid-column: 1/-1; margin: 4px 0 0 28px; max-width: 880px; color: var(--fm-text-muted); line-height: 1.65; }
-.featured { padding-block: 28px; }
-.info-grid { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(320px,.8fr); gap: 16px; }
+.featured { padding-block: 22px; }
+.info-grid { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(320px,.8fr); gap: 24px; }
 .card-head { display: flex; justify-content: space-between; align-items: center; font-weight: 800; }
 .guide-list { display: grid; gap: 12px; }
 .guide-list article,.exercise-note { padding: 18px; border-left: 2px solid rgba(45,212,191,.55); border-radius: 0 14px 14px 0; background: rgba(100,116,139,.06); }
 h3 { margin: 0 0 8px; color: var(--fm-text-strong); font-size: 14px; }
 .guide-list p,.exercise-note p { margin: 0; color: var(--fm-text-muted); line-height: 1.85; white-space: pre-line; }
-.side-stack { display: grid; gap: 16px; align-content: start; }
+.side-stack { display: grid; gap: 24px; align-content: start; }
 .exercise-note + .exercise-note { margin-top: 10px; }
 @media (max-width: 900px) { .info-grid { grid-template-columns: 1fr; } .plan-hero { align-items: stretch; flex-direction: column; } }
 @media (max-width: 650px) { .meal-tabs { display: flex; overflow-x: auto; } .meal-tabs button { min-width: 88px; } .food-row { grid-template-columns: 1fr; } }

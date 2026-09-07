@@ -23,7 +23,7 @@ html[data-preset='sketch'] {
   --ill-shadow-oval: rgba(20, 20, 20, 0.2);
   --ill-muted: #57534e;
   --ill-frame-bg: #ffffff;
-  --ill-frame-shadow: 4px 4px 0 rgba(74, 63, 54, 0.85);
+  --ill-frame-shadow: 3px 3px 0 rgba(74, 63, 54, 0.85);
 }
 
 html[data-preset='sketch'][data-theme='dark'] {
@@ -47,5 +47,5 @@ html[data-preset='sketch'][data-theme='dark'] {
   --ill-shadow-oval: rgba(0, 0, 0, 0.55);
   --ill-muted: #a8a29e;
   --ill-frame-bg: var(--ill-paper);
-  --ill-frame-shadow: 4px 4px 0 #0a0908;
+  --ill-frame-shadow: 3px 3px 0 #0a0908;
 }

@@ -104,7 +104,7 @@ onMounted(() => void loadDay())
 </script>
 
 <template>
-  <div class="app-shell page">
+  <div class="app-shell page health-page">
     <HealthModuleNav title="每日打卡" eyebrow="DAILY PROTOCOL / REAL DATA" />
     <NAlert v-if="store.error" type="error">{{ store.error }}</NAlert>
 
@@ -175,7 +175,7 @@ onMounted(() => void loadDay())
         <NCard class="glass" :bordered="false">
           <template #header><span class="title-icon"><NIcon :component="FitnessOutline" />运动记录</span></template>
           <NForm label-placement="top">
-            <NGrid :cols="2" :x-gap="10">
+            <NGrid :cols="2" :x-gap="12" :y-gap="12">
               <NFormItemGridItem label="类型">
                 <NSelect v-model:value="exercise.exerciseType" :options="[
                   { label: '有氧运动', value: 'AEROBIC' },
@@ -202,7 +202,7 @@ onMounted(() => void loadDay())
     <NCard class="glass" :bordered="false">
       <template #header><span class="title-icon"><NIcon :component="MoonOutline" />身体与作息</span></template>
       <NForm label-placement="top">
-        <NGrid cols="1 640:2 1000:4" responsive="self" :x-gap="14">
+        <NGrid cols="1 640:2 1000:4" responsive="self" :x-gap="16" :y-gap="16">
           <NFormItemGridItem label="体重（kg）"><NInputNumber v-model:value="record.weightKg" :min="20" :max="400" /></NFormItemGridItem>
           <NFormItemGridItem label="体脂率（%）"><NInputNumber v-model:value="record.bodyFatPercent" :min="1" :max="75" /></NFormItemGridItem>
           <NFormItemGridItem label="当日摄入（kcal）"><NInputNumber v-model:value="record.calorieIntake" :min="0" :max="10000" /></NFormItemGridItem>
@@ -219,20 +219,20 @@ onMounted(() => void loadDay())
 </template>
 
 <style scoped>
-.date-console { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 22px; border: 1px solid rgba(148,163,184,.14); border-radius: 18px; }
+.date-console { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 17px; border: 1px solid var(--fm-track); border-radius: var(--fm-radius-lg); }
 .date-console > div { display: grid; gap: 3px; }
 .date-console span { color: var(--fm-text-faint); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
 .date-console strong,.today-score b { color: var(--fm-text-strong); font-size: 20px; }
-.date-console input { padding: 9px 12px; border: 1px solid rgba(148,163,184,.2); border-radius: 10px; color: var(--fm-text-primary); background: rgba(100,116,139,.08); color-scheme: dark; }
+.date-console input { min-height: 36px; padding: 7px 11px; border: 1px solid var(--fm-track); border-radius: var(--fm-radius-sm); color: var(--fm-text-primary); background: rgba(100,116,139,.08); color-scheme: dark; }
 .today-score { text-align: right; }
-.check-grid { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(330px,.75fr); gap: 16px; }
+.check-grid { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(330px,.75fr); gap: 24px; }
 .meal-check-list { display: grid; gap: 10px; }
-.meal-check-list article { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 16px; padding: 18px; border: 1px solid rgba(148,163,184,.12); border-radius: 16px; background: rgba(100,116,139,.05); }
+.meal-check-list article { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 14px; padding: 15px; border: 1px solid var(--fm-track); border-radius: var(--fm-radius-md); background: rgba(100,116,139,.05); }
 .meal-check-list article.done { border-color: rgba(45,212,191,.32); background: rgba(20,184,166,.07); }
 .meal-index { display: grid; width: 44px; height: 44px; place-content: center; border-radius: 14px; color: #99f6e4; background: linear-gradient(145deg,rgba(13,148,136,.45),rgba(37,99,235,.25)); font-weight: 900; }
 .meal-copy h3 { margin: 0 0 5px; color: var(--fm-text-strong); }
 .meal-copy p { margin: 0; color: var(--fm-text-muted); font-size: 12px; line-height: 1.55; }
-.side-column { display: grid; gap: 16px; align-content: start; }
+.side-column { display: grid; gap: 24px; align-content: start; }
 .title-icon { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; }
 .water-number { margin-bottom: 8px; color: var(--fm-text-strong); font-size: 34px; font-weight: 900; }
 .water-number small { color: var(--fm-text-muted); font-size: 12px; font-weight: 500; }

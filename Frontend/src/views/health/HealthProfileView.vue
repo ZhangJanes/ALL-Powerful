@@ -64,7 +64,7 @@ onMounted(() => void load())
 </script>
 
 <template>
-  <div class="app-shell page">
+  <div class="app-shell page health-page">
     <HealthModuleNav title="基础档案" eyebrow="BODY PROFILE / PRIVATE" />
 
     <section class="profile-grid">
@@ -73,7 +73,7 @@ onMounted(() => void load())
           未知项可以留空。体脂实测值优先展示；没有实测值时，系统才使用 BMI、年龄和性别进行估算。
         </NAlert>
         <NForm label-placement="top" class="profile-form">
-          <NGrid cols="1 650:2" responsive="self" :x-gap="18">
+          <NGrid cols="1 650:2" responsive="self" :x-gap="18" :y-gap="16">
             <NFormItemGridItem label="生理性别（用于公式）">
               <NSelect v-model:value="form.gender" clearable :options="[
                 { label: '女性', value: 'female' },
@@ -153,14 +153,14 @@ onMounted(() => void load())
 </template>
 
 <style scoped>
-.profile-grid { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(330px,.7fr); gap: 16px; }
-.form-card,.result-card,.method-card { border-radius: 20px; }
+.profile-grid { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(330px,.7fr); gap: 24px; }
+.form-card,.result-card,.method-card { border-radius: var(--fm-radius-lg); }
 .profile-form { margin-top: 18px; }
-.result-stack { display: grid; gap: 16px; align-content: start; }
-.calc-hero { display: grid; place-items: center; min-height: 200px; margin-bottom: 12px; border-radius: 18px; background: radial-gradient(circle,rgba(20,184,166,.18),rgba(37,99,235,.05) 50%,transparent 70%); }
+.result-stack { display: grid; gap: 24px; align-content: start; }
+.calc-hero { display: grid; place-items: center; min-height: 180px; margin-bottom: 12px; border-radius: var(--fm-radius-lg); background: radial-gradient(circle,rgba(20,184,166,.18),rgba(37,99,235,.05) 50%,transparent 70%); }
 .calc-hero span,.calc-hero small { color: var(--fm-text-faint); font-size: 11px; letter-spacing: .14em; }
 .calc-hero strong { color: var(--fm-text-strong); font-size: 66px; line-height: 1; letter-spacing: -.06em; }
-.fat-level { display: grid; gap: 12px; margin-bottom: 14px; padding: 17px; border: 1px solid rgba(148,163,184,.18); border-radius: 15px; background: rgba(100,116,139,.07); }
+.fat-level { display: grid; gap: 10px; margin-bottom: 14px; padding: 14px; border: 1px solid var(--fm-track); border-radius: var(--fm-radius-md); background: rgba(100,116,139,.07); }
 .fat-level > div { display: grid; gap: 3px; }
 .fat-level span,.fat-level small { color: var(--fm-text-muted); font-size: 11px; }
 .fat-level strong { color: var(--fm-text-strong); font-size: 22px; }

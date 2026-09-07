@@ -152,49 +152,48 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.health-page { max-width: 1480px; }
-.dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .75fr); gap: 18px; }
+.dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .75fr); gap: 24px; }
 .nutrition-orbit {
   min-height: 420px;
   display: grid;
   grid-template-columns: 1fr 360px;
   align-items: center;
-  gap: 20px;
-  padding: clamp(26px, 4vw, 54px);
+  gap: 18px;
+  padding: clamp(22px, 3vw, 38px);
   overflow: hidden;
   border: 1px solid rgba(45, 212, 191, .18);
-  border-radius: 24px;
+  border-radius: var(--fm-radius-xl);
   background:
     radial-gradient(circle at 72% 50%, rgba(20, 184, 166, .16), transparent 31%),
     radial-gradient(circle at 20% 10%, rgba(37, 99, 235, .12), transparent 34%);
 }
 .kicker { color: #2dd4bf; font-size: 11px; font-weight: 800; letter-spacing: .2em; }
-.orbit-copy h2 { margin: 12px 0 16px; color: var(--fm-text-strong); font-size: clamp(32px, 4vw, 58px); line-height: 1.02; letter-spacing: -.05em; }
-.orbit-copy p { max-width: 510px; margin: 0 0 26px; color: var(--fm-text-muted); line-height: 1.75; }
+.orbit-copy h2 { margin: 10px 0 14px; color: var(--fm-text-strong); font-size: clamp(28px, 3.5vw, 48px); line-height: 1.05; letter-spacing: -.04em; }
+.orbit-copy p { max-width: 510px; margin: 0 0 20px; color: var(--fm-text-muted); line-height: 1.65; }
 .orbit { position: relative; width: min(32vw, 330px); aspect-ratio: 1; margin: auto; border: 1px solid rgba(45, 212, 191, .25); border-radius: 50%; box-shadow: inset 0 0 70px rgba(13, 148, 136, .08), 0 0 70px rgba(37, 99, 235, .08); }
 .orbit::before { content: ''; position: absolute; inset: 28px; border-radius: 50%; background: conic-gradient(#14b8a6 0 var(--progress), rgba(100,116,139,.13) var(--progress) 100%); -webkit-mask: radial-gradient(farthest-side,transparent calc(100% - 12px),#000 0); mask: radial-gradient(farthest-side,transparent calc(100% - 12px),#000 0); transition: background .5s ease; }
 .orbit-center { position: absolute; inset: 34%; display: grid; place-content: center; text-align: center; border-radius: 50%; background: rgba(15, 23, 42, .18); backdrop-filter: blur(14px); }
 .orbit-center strong { color: var(--fm-text-strong); font-size: 42px; line-height: 1; }
 .orbit-center span { margin-top: 6px; color: var(--fm-text-faint); font-size: 10px; letter-spacing: .12em; }
-.orbit-node { --angle: calc(var(--index) * 90deg - 90deg); position: absolute; left: calc(50% + 50% * cos(var(--angle))); top: calc(50% + 50% * sin(var(--angle))); display: grid; width: 68px; height: 68px; place-content: center; transform: translate(-50%, -50%); border: 1px solid rgba(148, 163, 184, .22); border-radius: 20px; background: var(--fm-main-bg); text-align: center; }
+.orbit-node { --angle: calc(var(--index) * 90deg - 90deg); position: absolute; left: calc(50% + 50% * cos(var(--angle))); top: calc(50% + 50% * sin(var(--angle))); display: grid; width: 64px; height: 64px; place-content: center; transform: translate(-50%, -50%); border: 1px solid var(--fm-track); border-radius: var(--fm-radius-lg); background: var(--fm-main-bg); text-align: center; }
 .orbit-node.done { border-color: rgba(45, 212, 191, .75); box-shadow: 0 0 24px rgba(20, 184, 166, .25); }
 .orbit-node small { color: var(--fm-text-faint); font-size: 8px; letter-spacing: .12em; }
 .orbit-node b { color: var(--fm-text-primary); font-size: 12px; }
-.metric-panel { padding: 24px; border-radius: 24px; }
+.metric-panel { padding: 20px; border-radius: var(--fm-radius-xl); }
 .panel-title { display: flex; justify-content: space-between; color: var(--fm-text-strong); font-weight: 800; }
-.metric-list { display: grid; gap: 10px; margin-top: 22px; }
-.metric-list > div { display: flex; align-items: baseline; justify-content: space-between; padding: 16px; border-radius: 14px; background: rgba(100, 116, 139, .08); }
+.metric-list { display: grid; gap: 8px; margin-top: 18px; }
+.metric-list > div { display: flex; align-items: baseline; justify-content: space-between; padding: 13px 14px; border-radius: var(--fm-radius-md); background: rgba(100, 116, 139, .08); }
 .metric-list span { color: var(--fm-text-muted); font-size: 12px; }
 .metric-list strong { color: var(--fm-text-strong); font-size: 18px; }
 .metric-list strong small { display: block; margin-top: 3px; color: #2dd4bf; font-size: 10px; font-weight: 700; }
 .notice { margin: 18px 0 0; color: var(--fm-text-faint); font-size: 11px; line-height: 1.6; }
-.pulse-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.pulse-card { display: grid; gap: 9px; padding: 20px; border: 1px solid rgba(148, 163, 184, .12); border-radius: 18px; color: var(--fm-text-primary); text-align: left; cursor: pointer; }
+.pulse-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.pulse-card { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--fm-track); border-radius: var(--fm-radius-lg); color: var(--fm-text-primary); text-align: left; cursor: pointer; }
 .pulse-card:hover { transform: translateY(-2px); border-color: rgba(45, 212, 191, .34); }
 .pulse-card span,.pulse-card small { color: var(--fm-text-muted); font-size: 12px; }
 .pulse-card strong { color: var(--fm-text-strong); font-size: 22px; }
-.goal-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
-.goal-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px; border-radius: 16px; background: rgba(100, 116, 139, .07); }
+.goal-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.goal-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px; border-radius: var(--fm-radius-md); background: rgba(100, 116, 139, .07); }
 .goal-item div { display: grid; gap: 6px; }
 .goal-item b { color: var(--fm-text-strong); }
 .goal-item span { color: var(--fm-text-muted); font-size: 12px; }

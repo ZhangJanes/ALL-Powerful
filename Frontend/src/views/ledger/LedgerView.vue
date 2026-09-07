@@ -129,12 +129,12 @@ async function save() {
   align-items: center;
   justify-content: space-between;
   padding: 6px 6px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: var(--fm-radius-md);
+  border: 1px solid var(--fm-track);
 }
 .amt {
   text-align: center;
-  border-radius: 16px;
+  border-radius: var(--fm-radius-lg);
 }
 .amt.expense .value {
   color: #fb7185;
@@ -168,14 +168,14 @@ async function save() {
 .keys {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
+  gap: 8px;
   max-width: 720px;
 }
 .key {
-  height: 52px;
+  height: var(--fm-control-height-lg);
 }
 
 .cat-scroll {
-  gap: 10px;
+  gap: 8px;
 }
 </style>

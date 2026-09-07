@@ -160,8 +160,8 @@ onMounted(async () => {
   align-items: center;
   gap: 10px;
   padding: 6px 6px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: var(--fm-radius-md);
+  border: 1px solid var(--fm-track);
 }
 .nav-title {
   flex: 1;
@@ -183,13 +183,13 @@ onMounted(async () => {
 }
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(256px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--fm-card-grid-min), 1fr));
   gap: 14px;
   margin-top: 4px;
 }
 .travel-card {
   position: relative;
-  border-radius: 16px;
+  border-radius: var(--fm-radius-lg);
   cursor: pointer;
   display: flex;
   flex-direction: column;

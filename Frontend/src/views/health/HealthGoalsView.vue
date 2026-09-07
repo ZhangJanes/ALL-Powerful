@@ -107,7 +107,7 @@ onMounted(() => void store.syncGoals())
 </script>
 
 <template>
-  <div class="app-shell page">
+  <div class="app-shell page health-page">
     <HealthModuleNav title="目标计划" eyebrow="GOALS / MEASURABLE" />
     <NAlert v-if="store.error" type="error">{{ store.error }}</NAlert>
 
@@ -150,7 +150,7 @@ onMounted(() => void store.syncGoals())
 
     <NModal v-model:show="showEditor" preset="card" :title="editingId ? '编辑目标' : '新建目标'" class="goal-modal">
       <NForm label-placement="top">
-        <NGrid :cols="2" :x-gap="14">
+        <NGrid :cols="2" :x-gap="14" :y-gap="14">
           <NFormItemGridItem label="目标类型">
             <NSelect v-model:value="form.goalType" :options="typeOptions" @update:value="onTypeChange" />
           </NFormItemGridItem>
@@ -180,12 +180,12 @@ onMounted(() => void store.syncGoals())
 </template>
 
 <style scoped>
-.goals-hero { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: 32px; border: 1px solid rgba(45,212,191,.15); border-radius: 22px; background: radial-gradient(circle at 85% 15%,rgba(139,92,246,.16),transparent 30%); }
+.goals-hero { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 24px; border: 1px solid rgba(45,212,191,.15); border-radius: var(--fm-radius-xl); background: radial-gradient(circle at 85% 15%,rgba(139,92,246,.16),transparent 30%); }
 .goals-hero > div > span,.goal-type { color: #2dd4bf; font-size: 10px; font-weight: 800; letter-spacing: .16em; }
 .goals-hero h2 { margin: 10px 0; color: var(--fm-text-strong); font-size: clamp(30px,4vw,48px); line-height: 1.05; letter-spacing: -.04em; }
 .goals-hero p { margin: 0; color: var(--fm-text-muted); }
-.goals-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 14px; }
-.goal-card { padding: 20px; border: 1px solid rgba(148,163,184,.13); border-radius: 19px; }
+.goals-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 20px; }
+.goal-card { padding: 17px; border: 1px solid var(--fm-track); border-radius: var(--fm-radius-lg); }
 .goal-top,.goal-actions { display: flex; justify-content: space-between; align-items: center; }
 .goal-icon { display: grid; width: 42px; height: 42px; place-content: center; border-radius: 13px; color: #99f6e4; background: rgba(13,148,136,.18); }
 .goal-type { display: block; margin-top: 22px; }

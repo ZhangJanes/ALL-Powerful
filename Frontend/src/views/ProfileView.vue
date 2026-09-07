@@ -198,8 +198,8 @@ function applyFont(v: FontMode) {
 
 <style scoped>
 .profile {
-  border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: var(--fm-radius-lg);
+  border: 1px solid var(--fm-track);
 }
 .head {
   display: flex;
@@ -216,8 +216,8 @@ function applyFont(v: FontMode) {
 }
 .block {
   margin-top: 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: var(--fm-radius-lg);
+  border: 1px solid var(--fm-track);
 }
 .logout {
   margin-top: 16px;
@@ -231,8 +231,8 @@ function applyFont(v: FontMode) {
 }
 
 .preset-card {
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: var(--fm-radius-md);
+  border: 1px solid var(--fm-track);
   padding: 12px 12px 10px;
   cursor: pointer;
   transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;

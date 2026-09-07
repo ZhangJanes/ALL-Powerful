@@ -79,8 +79,8 @@ onMounted(async () => {
   gap: 10px;
   padding: 6px 6px 10px;
   margin-bottom: 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: var(--fm-radius-md);
+  border: 1px solid var(--fm-track);
 }
 .nav-title {
   flex: 1;
@@ -88,7 +88,7 @@ onMounted(async () => {
   text-align: center;
 }
 .list {
-  border-radius: 14px;
+  border-radius: var(--fm-radius-md);
   overflow: hidden;
 }
 /* 浅色：干净信纸感；深色：略沉的衬底 */
@@ -115,11 +115,11 @@ html[data-theme='light'] .msg-av {
 }
 .msg-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--fm-card-grid-min), 1fr));
   gap: 14px;
 }
 .msg-card {
-  border-radius: 16px;
+  border-radius: var(--fm-radius-lg);
 }
 .msg-card__head {
   display: flex;

@@ -25,7 +25,7 @@ const wrapStyle = computed(() => ({
 
 <style scoped>
 .fm-chart-block {
-  border-radius: 4px;
+  border-radius: var(--fm-radius-md);
   overflow: hidden;
   box-sizing: border-box;
   padding: 6px;

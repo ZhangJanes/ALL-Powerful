@@ -49,10 +49,10 @@ const tabs = [
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 14px 18px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 18px;
+  gap: 20px;
+  padding: 11px 15px;
+  border: 1px solid var(--fm-track);
+  border-radius: var(--fm-radius-lg);
 }
 .heading {
   display: flex;
@@ -63,34 +63,36 @@ const tabs = [
   color: var(--fm-text-faint);
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.12em;
 }
 h1 {
   margin: 2px 0 0;
   color: var(--fm-text-strong);
-  font-size: 20px;
-  line-height: 1.15;
+  font-size: var(--fm-font-title);
+  line-height: 28px;
+  letter-spacing: -0.018em;
 }
 .module-tabs {
   display: flex;
   gap: 4px;
   padding: 4px;
   overflow-x: auto;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  border-radius: 12px;
+  border: 1px solid var(--fm-track);
+  border-radius: var(--fm-radius-sm);
   background: rgba(15, 23, 42, 0.08);
 }
 .module-tabs button {
   min-width: max-content;
-  padding: 7px 11px;
+  min-height: 32px;
+  padding: 6px 11px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 7px;
   color: var(--fm-text-muted);
   background: transparent;
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: var(--fm-font-label);
+  font-weight: 700;
 }
 .module-tabs button:hover,
 .module-tabs button:focus-visible {

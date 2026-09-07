@@ -23,7 +23,7 @@ onMounted(() => void store.syncStats(days.value))
 </script>
 
 <template>
-  <div class="app-shell page">
+  <div class="app-shell page health-page">
     <HealthModuleNav title="数据趋势" eyebrow="TRENDS / OBSERVED ONLY" />
 
     <div class="stats-toolbar glass">
@@ -73,17 +73,17 @@ onMounted(() => void store.syncStats(days.value))
 </template>
 
 <style scoped>
-.stats-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 20px; border: 1px solid rgba(148,163,184,.13); border-radius: 17px; }
+.stats-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 17px; border: 1px solid var(--fm-track); border-radius: var(--fm-radius-lg); }
 .stats-toolbar > div { display: grid; gap: 4px; }
 .stats-toolbar span,.stat-cards span { color: var(--fm-text-muted); font-size: 11px; letter-spacing: .08em; }
 .stats-toolbar b { color: var(--fm-text-strong); }
-.stat-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 13px; }
-.stat-cards article { display: grid; gap: 9px; padding: 20px; border: 1px solid rgba(148,163,184,.12); border-radius: 18px; color: #2dd4bf; }
+.stat-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
+.stat-cards article { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--fm-track); border-radius: var(--fm-radius-lg); color: #2dd4bf; }
 .stat-cards strong { color: var(--fm-text-strong); font-size: 25px; }
 .stat-cards small { color: var(--fm-text-muted); font-size: 11px; font-weight: 500; }
-.charts-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.charts-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
 .charts-grid p,.heat-caption { margin: 10px 0 0; color: var(--fm-text-faint); font-size: 11px; }
-.heat-card { border-radius: 18px; }
+.heat-card { border-radius: var(--fm-radius-lg); }
 .heat-scroll { margin-top: 16px; overflow-x: auto; padding-bottom: 5px; }
 @media (max-width: 900px) { .stat-cards,.charts-grid { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 640px) { .stats-toolbar { align-items: stretch; flex-direction: column; } .stat-cards,.charts-grid { grid-template-columns: 1fr; } }

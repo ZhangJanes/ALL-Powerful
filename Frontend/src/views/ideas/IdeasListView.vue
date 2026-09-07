@@ -98,8 +98,8 @@ onMounted(async () => {
   align-items: center;
   gap: 10px;
   padding: 6px 6px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: var(--fm-radius-md);
+  border: 1px solid var(--fm-track);
 }
 .nav-title {
   flex: 1;
@@ -111,16 +111,16 @@ onMounted(async () => {
   gap: 6px;
 }
 .list {
-  border-radius: 14px;
+  border-radius: var(--fm-radius-md);
   overflow: hidden;
 }
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--fm-card-grid-min), 1fr));
   gap: 14px;
 }
 .idea-card {
-  border-radius: 16px;
+  border-radius: var(--fm-radius-lg);
   cursor: pointer;
 }
 .idea-card__row {

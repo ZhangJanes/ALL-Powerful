@@ -106,7 +106,7 @@ watch(
 </script>
 
 <template>
-    <div class="app-shell">
+    <div class="app-shell page">
         <div class="hero glass">
             <div class="hero-top">
                 <div>
@@ -363,10 +363,10 @@ watch(
 
 <style scoped>
 .hero {
-    margin: 0 0 20px;
-    padding: 20px 24px 16px;
-    border-radius: 18px;
-    border: 1px solid rgba(148, 163, 184, 0.12);
+    margin: 0;
+    padding: 16px 19px 14px;
+    border-radius: var(--fm-radius-lg);
+    border: 1px solid var(--fm-track);
 }
 .hero-top {
     display: flex;
@@ -374,8 +374,10 @@ watch(
     align-items: flex-start;
 }
 .date-line {
-    font-size: 20px;
+    font-size: var(--fm-font-title);
+    line-height: 28px;
     font-weight: 700;
+    letter-spacing: -0.018em;
 }
 .weather {
     margin-top: 6px;
@@ -405,19 +407,22 @@ watch(
 .forecast-row {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
 }
 .forecast-day {
-    border: 1px solid rgba(148, 163, 184, 0.14);
-    border-radius: 12px;
+    border: 1px solid var(--fm-track);
+    border-radius: var(--fm-radius-md);
     background: rgba(148, 163, 184, 0.06);
-    padding: 10px 8px;
+    padding: 9px 8px;
     text-align: center;
     cursor: pointer;
     color: inherit;
+    transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
 .forecast-day:hover {
-    border-color: rgba(20, 184, 166, 0.35);
+    transform: translateY(-1px);
+    background: rgba(148, 163, 184, 0.09);
+    box-shadow: var(--fm-shadow-sm);
 }
 .forecast-week {
     font-size: 13px;
@@ -517,15 +522,15 @@ watch(
     background: linear-gradient(135deg, #14b8a6, #64748b);
 }
 .todo-hint {
-    margin-top: 12px;
-    font-size: 15px;
+    margin-top: 10px;
+    font-size: 14px;
     cursor: pointer;
     color: #fdba74;
 }
 .card-block {
-    margin: 0 0 20px;
-    border-radius: 16px;
-    border: 1px solid rgba(148, 163, 184, 0.1);
+    margin: 0;
+    border-radius: var(--fm-radius-lg);
+    border: 1px solid var(--fm-track);
 }
 .mini {
     cursor: pointer;
@@ -556,13 +561,13 @@ watch(
     cursor: pointer;
 }
 .shortcut-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(148, 163, 184, 0.12);
+    border: 1px solid var(--fm-track);
 }
 .shortcut-label {
     font-size: 12px;
@@ -585,7 +590,8 @@ watch(
 }
 .chart-cap {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     color: var(--fm-text-muted);
     margin-bottom: 8px;
 }
