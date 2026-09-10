@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { lightTheme, NConfigProvider, useMessage } from 'naive-ui'
+import { darkTheme, lightTheme, NConfigProvider, useMessage } from 'naive-ui'
 import {
   AirplaneOutline,
   CheckboxOutline,
@@ -13,6 +13,8 @@ import {
   WalletOutline,
 } from '@vicons/ionicons5'
 import { useAuthStore } from '@/stores/auth'
+import LoginThreeField from '@/components/auth/LoginThreeField.vue'
+import LoginFormAura from '@/components/auth/LoginFormAura.vue'
 
 type AuthMode = 'login' | 'register'
 
@@ -31,47 +33,14 @@ const loading = ref(false)
 const now = ref(new Date())
 const sceneIndex = ref(0)
 const paused = ref(false)
-const reduceMotion = ref(false)
+const reduceMotion = ref(
+  typeof window !== 'undefined'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false,
+)
 
 let clockTimer: ReturnType<typeof setInterval> | undefined
 let sceneTimer: ReturnType<typeof setInterval> | undefined
-let bubbleId = 1
-const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
-
-type Bubble = {
-  id: number
-  x: number
-  y: number
-  size: number
-  delay: number
-  duration: number
-  path: 1 | 2 | 3 | 4
-  sway: number
-  bursting: boolean
-  spawning: boolean
-}
-
-function makeBubble(
-  spec: Omit<Bubble, 'id' | 'bursting' | 'spawning'>,
-): Bubble {
-  return { ...spec, id: bubbleId++, bursting: false, spawning: false }
-}
-
-function later(fn: () => void, ms: number) {
-  const timer = setTimeout(() => {
-    pendingTimers.delete(timer)
-    fn()
-  }, ms)
-  pendingTimers.add(timer)
-}
-
-function rand(min: number, max: number) {
-  return min + Math.random() * (max - min)
-}
-
-function randInt(min: number, max: number) {
-  return min + Math.floor(Math.random() * (max - min + 1))
-}
 
 const scenes = [
   {
@@ -131,63 +100,6 @@ const scenes = [
   },
 ] as const
 
-let fieldGen = 0
-const bubbles = ref<Bubble[]>([])
-
-function rollBubble(spawning = false, fromBottom = false): Bubble {
-  const y = fromBottom ? rand(88, 106) : rand(48, 96)
-  const bubble = makeBubble({
-    x: rand(4, 72),
-    y,
-    size: Math.round(rand(32, 176)),
-    delay: fromBottom ? rand(0, 1.2) : rand(0, 8),
-    duration: Math.max(16, y / 3.1),
-    path: randInt(1, 4) as Bubble['path'],
-    sway: rand(-36, 36),
-  })
-  bubble.spawning = spawning
-  return bubble
-}
-
-function spawnBubble() {
-  const gen = fieldGen
-  const bubble = rollBubble(true, true)
-  bubbles.value = [...bubbles.value, bubble]
-  later(() => {
-    if (fieldGen !== gen) return
-    const found = bubbles.value.find((item) => item.id === bubble.id)
-    if (found) found.spawning = false
-  }, 1100)
-}
-
-function seedField() {
-  fieldGen += 1
-  bubbles.value = Array.from({ length: randInt(5, 8) }, () => rollBubble())
-}
-
-function burstBubble(id: number) {
-  const bubble = bubbles.value.find((item) => item.id === id)
-  if (!bubble || bubble.bursting) return
-  const gen = fieldGen
-  bubble.bursting = true
-  later(() => {
-    if (fieldGen !== gen) return
-    bubbles.value = bubbles.value.filter((item) => item.id !== id)
-    later(() => {
-      if (fieldGen !== gen) return
-      spawnBubble()
-    }, 240 + Math.random() * 640)
-  }, reduceMotion.value ? 200 : 640)
-}
-
-function onRiseEnd(id: number, event: AnimationEvent) {
-  if (!event.animationName.includes('rise')) return
-  if (reduceMotion.value) return
-  burstBubble(id)
-}
-
-seedField()
-
 const activeScene = computed(() => scenes[sceneIndex.value])
 const titleChars = computed(() => Array.from(activeScene.value.title))
 
@@ -225,8 +137,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer)
   if (sceneTimer) clearInterval(sceneTimer)
-  pendingTimers.forEach((timer) => clearTimeout(timer))
-  pendingTimers.clear()
 })
 
 const redirectTo = computed(() => {
@@ -306,21 +216,56 @@ function submit() {
   return submitLogin()
 }
 
-const fixedOverrides = {
+const pageOverrides = {
   common: {
     fontFamily: 'var(--fm-font-sans)',
     borderRadius: '14px',
-    primaryColor: '#0d9488',
-    primaryColorHover: '#0f766e',
-    primaryColorPressed: '#115e59',
-    bodyColor: '#f6f8fc',
-    cardColor: 'rgba(255, 255, 255, 0.92)',
   },
 } as const
+
+const formOverrides = {
+  common: {
+    fontFamily: 'var(--fm-font-sans)',
+    borderRadius: '12px',
+    primaryColor: '#f1f5f9',
+    primaryColorHover: '#ffffff',
+    primaryColorPressed: '#cbd5e1',
+    primaryColorSuppl: '#e2e8f0',
+    textColorBase: '#f8fafc',
+    placeholderColor: 'rgba(248, 250, 252, 0.38)',
+    inputColor: 'transparent',
+    inputColorDisabled: 'transparent',
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+    hoverColor: 'transparent',
+    cardColor: 'transparent',
+    modalColor: 'transparent',
+    bodyColor: 'transparent',
+  },
+  Card: {
+    color: 'transparent',
+    colorEmbedded: 'transparent',
+  },
+  Input: {
+    color: 'transparent',
+    colorFocus: 'transparent',
+    colorDisabled: 'transparent',
+    colorFocusError: 'transparent',
+    colorFocusWarning: 'transparent',
+    textColor: '#f8fafc',
+    caretColor: '#f8fafc',
+    placeholderColor: 'rgba(248, 250, 252, 0.4)',
+    border: '1px solid rgba(255, 255, 255, 0.22)',
+    borderHover: '1px solid rgba(255, 255, 255, 0.38)',
+    borderFocus: '1px solid rgba(255, 255, 255, 0.5)',
+    boxShadowFocus: 'none',
+  },
+} as const
+
+const inputSkin = formOverrides.Input
 </script>
 
 <template>
-  <NConfigProvider :theme="lightTheme" :theme-overrides="fixedOverrides">
+  <NConfigProvider :theme="lightTheme" :theme-overrides="pageOverrides">
     <div class="auth-page" data-page="auth" :data-mode="mode" :data-scene="activeScene.key">
       <div class="stage">
         <article
@@ -337,44 +282,7 @@ const fixedOverrides = {
         </article>
         <div class="stage-veil" aria-hidden="true" />
         <div class="stage-grain" aria-hidden="true" />
-        <div class="bubble-field">
-          <button
-            v-for="bubble in bubbles"
-            :key="bubble.id"
-            type="button"
-            class="bubble"
-            :class="[
-              `bubble-path--${bubble.path}`,
-              { bursting: bubble.bursting, spawning: bubble.spawning, idle: !bubble.bursting && !bubble.spawning },
-            ]"
-            :style="{
-              left: `${bubble.x}%`,
-              top: `${bubble.y}%`,
-              width: `${bubble.size}px`,
-              height: `${bubble.size}px`,
-              '--start': String(bubble.y),
-              '--sway': `${bubble.sway}px`,
-              '--rise-duration': `${bubble.duration}s`,
-              '--rise-delay': `${bubble.delay}s`,
-              '--fly': `${Math.round(bubble.size * 0.58)}px`,
-            }"
-            aria-label="戳破气泡"
-            :tabindex="bubble.bursting ? -1 : 0"
-            :disabled="bubble.bursting"
-            @click="burstBubble(bubble.id)"
-            @animationend="onRiseEnd(bubble.id, $event)"
-          >
-            <span class="bubble-bob">
-              <i class="bubble-glint" />
-            </span>
-            <i
-              v-for="n in 10"
-              :key="n"
-              class="shard"
-              :style="{ '--i': n }"
-            />
-          </button>
-        </div>
+        <LoginThreeField v-if="!reduceMotion" :scene-key="activeScene.key" />
       </div>
 
       <header class="topbar">
@@ -423,6 +331,8 @@ const fixedOverrides = {
         </section>
 
         <section class="panel" @mouseenter="paused = true" @mouseleave="paused = false">
+          <LoginFormAura v-if="!reduceMotion" :scene-key="activeScene.key" />
+          <NConfigProvider :theme="darkTheme" :theme-overrides="formOverrides">
           <NCard class="card" :bordered="false">
             <div class="mode-tabs">
               <button type="button" class="mode-tab" :class="{ active: !isRegister }" @click="switchMode('login')">
@@ -445,6 +355,7 @@ const fixedOverrides = {
                     :placeholder="isRegister ? '至少 3 个字符' : '请输入用户名'"
                     size="large"
                     clearable
+                    :theme-overrides="inputSkin"
                   >
                     <template #prefix>
                       <NIcon :component="PersonOutline" class="input-icon" />
@@ -454,7 +365,13 @@ const fixedOverrides = {
 
                 <label v-if="isRegister" class="field">
                   <span>昵称（可选）</span>
-                  <NInput v-model:value="displayName" placeholder="默认同用户名" size="large" clearable />
+                  <NInput
+                    v-model:value="displayName"
+                    placeholder="默认同用户名"
+                    size="large"
+                    clearable
+                    :theme-overrides="inputSkin"
+                  />
                 </label>
 
                 <label class="field">
@@ -465,6 +382,7 @@ const fixedOverrides = {
                     show-password-on="click"
                     :placeholder="isRegister ? '至少 6 位' : '请输入密码'"
                     size="large"
+                    :theme-overrides="inputSkin"
                     @keydown.enter.prevent="!isRegister && submit()"
                   >
                     <template #prefix>
@@ -481,6 +399,7 @@ const fixedOverrides = {
                     show-password-on="click"
                     placeholder="再次输入密码"
                     size="large"
+                    :theme-overrides="inputSkin"
                     @keydown.enter.prevent="submit"
                   >
                     <template #prefix>
@@ -502,6 +421,7 @@ const fixedOverrides = {
               </div>
             </Transition>
           </NCard>
+          </NConfigProvider>
         </section>
       </main>
     </div>
@@ -675,117 +595,6 @@ const fixedOverrides = {
 .scene--vault .scene-orb--b { width: 30vw; height: 30vw; left: -8%; bottom: -8%; background: rgba(34, 211, 238, 0.16); }
 .scene--vault .scene-orb--c { width: 18vw; height: 18vw; left: 36%; top: 28%; background: rgba(165, 180, 252, 0.14); }
 
-.bubble-field {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.bubble {
-  position: absolute;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  pointer-events: none;
-  appearance: none;
-  -webkit-tap-highlight-color: transparent;
-  transform-origin: center;
-}
-
-.bubble.idle {
-  animation: rise var(--rise-duration) linear var(--rise-delay) forwards;
-}
-
-.bubble.bursting {
-  animation-play-state: paused;
-}
-
-.bubble:not(:disabled) {
-  pointer-events: auto;
-}
-
-.bubble:disabled {
-  cursor: default;
-}
-
-.bubble-bob {
-  position: relative;
-  display: grid;
-  width: 100%;
-  height: 100%;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.5), transparent 20%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03));
-  box-shadow:
-    inset -10px -12px 24px rgba(15, 23, 42, 0.12),
-    0 18px 40px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  will-change: transform;
-  transition: transform 220ms var(--ease-out);
-}
-
-.bubble.spawning .bubble-bob {
-  animation: bubble-in 1100ms var(--ease-out) both;
-}
-
-.bubble.bursting .bubble-bob {
-  opacity: 0;
-  transform: scale(0.94);
-  transition:
-    opacity 180ms var(--ease-out),
-    transform 180ms var(--ease-out);
-}
-
-.bubble-glint {
-  width: 18%;
-  height: 8%;
-  margin-top: 18%;
-  align-self: start;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.55);
-  filter: blur(1.5px);
-  transform: rotate(-28deg);
-}
-
-.shard {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 18%;
-  height: 18%;
-  border-radius: 58% 42% 62% 38%;
-  background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), transparent 42%),
-    rgba(255, 255, 255, 0.28);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.shard:nth-child(odd) {
-  width: 12%;
-  height: 22%;
-  border-radius: 40% 70% 30% 60%;
-}
-
-.shard:nth-child(3n) {
-  width: 22%;
-  height: 10%;
-  border-radius: 999px;
-}
-
-.bubble.bursting .shard {
-  animation: shard-fly 480ms var(--ease-out) both;
-  animation-delay: calc(var(--i) * 14ms);
-}
-
 .scene.active .scene-orb--a { animation: drift-a 18s var(--ease-move) infinite; }
 .scene.active .scene-orb--b { animation: drift-b 22s var(--ease-move) infinite; }
 .scene.active .scene-orb--c { animation: drift-c 16s var(--ease-move) infinite; }
@@ -801,31 +610,6 @@ const fixedOverrides = {
 @keyframes drift-c {
   0%, 100% { transform: translate3d(0, 0, 0); }
   50% { transform: translate3d(16px, -22px, 0); }
-}
-@keyframes rise {
-  0% { transform: translate3d(0, 0, 0); }
-  38% { transform: translate3d(var(--sway), calc(var(--start) * -0.38vh), 0); }
-  72% { transform: translate3d(calc(var(--sway) * -0.55), calc(var(--start) * -0.72vh), 0); }
-  100% { transform: translate3d(calc(var(--sway) * 0.35), calc(var(--start) * -1vh), 0); }
-}
-@keyframes bubble-in {
-  from { opacity: 0; transform: scale(0.97); }
-  to { opacity: 1; transform: scale(1); }
-}
-@keyframes shard-fly {
-  from {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform:
-      translate(
-        calc(-50% + cos(calc(var(--i) * 36deg)) * var(--fly)),
-        calc(-50% + sin(calc(var(--i) * 36deg)) * var(--fly))
-      )
-      scale(0.55);
-  }
 }
 
 .stage-veil {
@@ -1057,19 +841,29 @@ const fixedOverrides = {
     transform 180ms var(--ease-out);
 }
 
+.panel {
+  position: relative;
+  isolation: isolate;
+}
+
 .card {
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   border-radius: 24px !important;
-  background: rgba(255, 255, 255, 0.82) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(8, 12, 22, 0.18)) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 30px 80px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 28px 80px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
 }
 
 .card :deep(.n-card__content) {
   padding: 22px;
+  background: transparent;
 }
 
 .mode-tabs {
@@ -1079,7 +873,7 @@ const fixedOverrides = {
   margin-bottom: 18px;
   padding: 4px;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .mode-tab {
@@ -1087,7 +881,7 @@ const fixedOverrides = {
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #64748b;
+  color: rgba(226, 232, 240, 0.58);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -1095,9 +889,9 @@ const fixedOverrides = {
 }
 
 .mode-tab.active {
-  background: #fff;
-  color: #0f172a;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  background: color-mix(in srgb, var(--copy-accent) 22%, rgba(255, 255, 255, 0.14));
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .form {
@@ -1107,14 +901,14 @@ const fixedOverrides = {
 
 .form h2 {
   margin: 0;
-  color: #0f172a;
+  color: #f8fafc;
   font-size: 22px;
   letter-spacing: -0.03em;
 }
 
 .sub {
   margin: -4px 0 4px;
-  color: #64748b;
+  color: rgba(226, 232, 240, 0.68);
   font-size: 13px;
 }
 
@@ -1124,13 +918,13 @@ const fixedOverrides = {
 }
 
 .field span {
-  color: #334155;
+  color: rgba(241, 245, 249, 0.78);
   font-size: 12px;
   font-weight: 700;
 }
 
 .input-icon {
-  color: #94a3b8;
+  color: rgba(226, 232, 240, 0.55);
 }
 
 .row {
@@ -1143,16 +937,24 @@ const fixedOverrides = {
   padding: 0;
   border: 0;
   background: none;
-  color: #0f766e;
+  color: var(--copy-accent);
   font-size: 12px;
   cursor: pointer;
+}
+
+.card :deep(.n-checkbox .n-checkbox__label) {
+  color: rgba(226, 232, 240, 0.78);
 }
 
 .card :deep(.n-button--primary-type) {
   min-height: 46px;
   margin-top: 4px;
-  background: linear-gradient(110deg, #0f766e, #0e7490);
-  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.2);
+  color: #0b1220 !important;
+  background: linear-gradient(180deg, #ffffff, #e8eef6) !important;
+  border: 0 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 12px 28px rgba(0, 0, 0, 0.22);
 }
 
 .scene-copy-enter-active,
@@ -1181,16 +983,10 @@ const fixedOverrides = {
     background: rgba(255, 255, 255, 0.7);
   }
   .mode-tab:hover:not(.active) {
-    color: #0f172a;
+    color: #f8fafc;
   }
   .card :deep(.n-button--primary-type:active) {
     transform: scale(0.985);
-  }
-  .bubble:hover:not(.bursting) .bubble-bob {
-    transform: scale(1.04);
-  }
-  .bubble:active:not(.bursting) .bubble-bob {
-    transform: scale(0.98);
   }
   .kicker:hover {
     color: var(--copy-accent);
@@ -1284,8 +1080,6 @@ const fixedOverrides = {
 
 @media (prefers-reduced-motion: reduce) {
   .scene,
-  .bubble,
-  .bubble-bob,
   .scene-dot,
   .mode-tab,
   .scene-copy-enter-active,
@@ -1304,11 +1098,59 @@ const fixedOverrides = {
   .scene:not(.active) {
     opacity: 0;
   }
-  .shard {
-    display: none;
-  }
-  .bubble.bursting .bubble-bob {
-    opacity: 0;
-  }
+}
+</style>
+
+<style>
+/* 非 scoped：压过 Naive 内联 --n-color，以及 Sketch 全局输入框实底/描边阴影 */
+[data-page='auth'] .n-input,
+html[data-preset='sketch'] [data-page='auth'] .n-input,
+html[data-preset='sketch'] [data-page='auth'] .n-input-number {
+  --n-color: transparent !important;
+  --n-color-focus: transparent !important;
+  --n-color-disabled: transparent !important;
+  --n-color-focus-error: transparent !important;
+  --n-color-focus-warning: transparent !important;
+  --n-box-shadow-focus: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+[data-page='auth'] .n-input.n-input--focus,
+[data-page='auth'] .n-input.n-input--hover,
+html[data-preset='sketch'] [data-page='auth'] .n-input.n-input--focus,
+html[data-preset='sketch'] [data-page='auth'] .n-input.n-input--hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-page='auth'] .n-input .n-input-wrapper,
+[data-page='auth'] .n-input .n-input__input-el,
+[data-page='auth'] .n-input .n-input__textarea-el,
+[data-page='auth'] .n-input .n-input__prefix,
+[data-page='auth'] .n-input .n-input__suffix,
+[data-page='auth'] .n-input .n-input__state-border,
+[data-page='auth'] .n-input input,
+[data-page='auth'] .n-input textarea,
+html[data-preset='sketch'] [data-page='auth'] .n-input .n-input-wrapper,
+html[data-preset='sketch'] [data-page='auth'] .n-input input,
+html[data-preset='sketch'] [data-page='auth'] .n-input textarea {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+[data-page='auth'] .n-input input:-webkit-autofill,
+[data-page='auth'] .n-input input:-webkit-autofill:hover,
+[data-page='auth'] .n-input input:-webkit-autofill:focus,
+[data-page='auth'] .n-input input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #f8fafc;
+  transition: background-color 99999s ease-out 0s;
+  box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
 }
 </style>

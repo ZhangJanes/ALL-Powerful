@@ -106,7 +106,7 @@ watch(
 </script>
 
 <template>
-    <div class="app-shell page">
+    <div class="app-shell page home-page">
         <div class="hero glass">
             <div class="hero-top">
                 <div>
@@ -362,6 +362,10 @@ watch(
 </template>
 
 <style scoped>
+.home-page {
+    position: relative;
+}
+
 .hero {
     margin: 0;
     padding: 16px 19px 14px;
