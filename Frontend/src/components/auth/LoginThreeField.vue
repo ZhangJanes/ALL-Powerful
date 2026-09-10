@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import * as THREE from 'three'
+import {
+  clearPulses,
+  prunePulses,
+  samplePulses,
+  spawnPulseFromNdc,
+  syncWaveSpace,
+} from '@/components/auth/loginWave'
 
 const props = defineProps<{
   sceneKey: string
@@ -66,6 +73,7 @@ const grain = new Float32Array(POINT_TOTAL)
 const rebuild = new Float32Array(MAX_COUNT)
 const hold = new Float32Array(MAX_COUNT)
 const phase = new Float32Array(POINT_TOTAL)
+const waveAmt = new Float32Array(MAX_COUNT)
 let sparkCursor = 0
 const AGE_STEP = 1 / 96
 const MOVE = 0.0145
@@ -228,11 +236,11 @@ function seedLattice() {
 function homeOf(i: number, t: number, out: { x: number; y: number; z: number }) {
   const x = i % cols
   const y = (i - x) / cols
-  const panX = Math.sin(t * 0.07) * 0.07
-  const panY = Math.cos(t * 0.055) * 0.05
-  out.x = originX + x * cell + panX
-  out.y = originY + y * cell + panY
+  const w = samplePulses(x, y, t)
+  out.x = originX + x * cell + w.x
+  out.y = originY + y * cell + w.y
   out.z = 0
+  return w.crest
 }
 
 function writeLines() {
@@ -243,7 +251,6 @@ function writeLines() {
   let w = 0
   let a = 0
   let c = 0
-  tmpColor.copy(gridTint).lerp(colorA, 0.1)
   const emit = (i: number, j: number) => {
     const i3 = i * 3
     const j3 = j * 3
@@ -255,9 +262,12 @@ function writeLines() {
     lp[w++] = pos[j3 + 2]
     const flying = (age[i] > 0 && age[i] < 1) || (age[j] > 0 && age[j] < 1)
     const mesh = Math.min(rebuild[i], rebuild[j])
-    const alpha = flying ? 0 : mesh * 0.13
+    const crest = Math.max(waveAmt[i], waveAmt[j])
+    const alpha = flying ? 0 : mesh * (0.1 + crest * 0.34)
     la[a++] = alpha
     la[a++] = alpha
+    tmpColor.copy(gridTint).lerp(colorA, 0.08 + crest * 0.42)
+    tmpColor.lerp(white, crest * 0.22)
     for (let k = 0; k < 2; k++) {
       lc[c++] = tmpColor.r
       lc[c++] = tmpColor.g
@@ -293,6 +303,7 @@ function layoutGrid() {
   originX = -((cols - 1) * cell) / 2
   originY = -((rows - 1) * cell) / 2
   seedLattice()
+  syncWaveSpace({ originX, originY, cell })
 }
 
 function resize() {
@@ -311,6 +322,7 @@ function resize() {
   camera.updateProjectionMatrix()
   spanX = hh * aspect * 2
   spanY = hh * 2
+  syncWaveSpace({ halfW: camera.right, halfH: camera.top })
   if (wash) wash.scale.set(spanX * 1.16, spanY * 1.16, 1)
   layoutGrid()
   for (let i = 0; i < count; i++) {
@@ -326,6 +338,7 @@ function step(now: number) {
   if (!running || !renderer || !scene || !camera || !posAttr || !sizeAttr || !colorAttr || !pointAlpha) return
   raf = requestAnimationFrame(step)
   const t = now * 0.001
+  prunePulses(t)
   colorA.lerp(colorTargetA, 0.04)
   colorB.lerp(colorTargetB, 0.04)
   colorC.lerp(colorTargetC, 0.04)
@@ -342,7 +355,8 @@ function step(now: number) {
 
   for (let i = 0; i < count; i++) {
     const i3 = i * 3
-    homeOf(i, t, homeTmp)
+    const w = homeOf(i, t, homeTmp)
+    waveAmt[i] = w
     const dx = homeTmp.x - mx
     const dy = homeTmp.y - my
     const dist = Math.hypot(dx, dy)
@@ -384,9 +398,10 @@ function step(now: number) {
         if (hold[i] > 0) hold[i] -= 0.016
         else rebuild[i] = Math.min(1, rebuild[i] + AGE_STEP * 0.55)
       }
-      sizes[i] = 1.6 * rebuild[i]
-      alphas[i] = 0.16 * rebuild[i]
-      tmpColor.copy(gridTint).lerp(colorA, 0.08)
+      sizes[i] = (1.45 + w * 2.6) * rebuild[i]
+      alphas[i] = (0.14 + w * 0.42) * rebuild[i]
+      tmpColor.copy(gridTint).lerp(colorA, 0.08 + w * 0.38)
+      tmpColor.lerp(white, w * 0.2)
     }
     colors[i3] = tmpColor.r
     colors[i3 + 1] = tmpColor.g
@@ -437,11 +452,22 @@ function step(now: number) {
 }
 
 function onPointer(e: PointerEvent) {
-  if (!renderer) return
+  if (!renderer || !camera) return
   const rect = renderer.domElement.getBoundingClientRect()
   if (rect.width < 2 || rect.height < 2) return
   mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1
   mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1
+}
+
+function onPointerDown(e: PointerEvent) {
+  if (e.button !== 0 || !renderer || !camera) return
+  const rect = renderer.domElement.getBoundingClientRect()
+  if (rect.width < 2 || rect.height < 2) return
+  const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1
+  const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1
+  mouse.x = ndcX
+  mouse.y = ndcY
+  spawnPulseFromNdc(ndcX, ndcY)
 }
 
 function onVisibility() {
@@ -554,6 +580,7 @@ function setup() {
   writeLines()
   window.addEventListener('resize', resize)
   window.addEventListener('pointermove', onPointer, { passive: true })
+  window.addEventListener('pointerdown', onPointerDown)
   document.addEventListener('visibilitychange', onVisibility)
   startLoop()
 }
@@ -562,7 +589,9 @@ function teardown() {
   stop()
   window.removeEventListener('resize', resize)
   window.removeEventListener('pointermove', onPointer)
+  window.removeEventListener('pointerdown', onPointerDown)
   document.removeEventListener('visibilitychange', onVisibility)
+  clearPulses()
   wash?.geometry.dispose()
   washMat?.dispose()
   points?.geometry.dispose()

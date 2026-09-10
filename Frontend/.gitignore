@@ -5,3 +5,4 @@ package-lock.json
 .DS_Store
 src/auto-imports.d.ts
 src/components.d.ts
+.tmp-login-debug/

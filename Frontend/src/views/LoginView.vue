@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { darkTheme, lightTheme, NConfigProvider, useMessage } from 'naive-ui'
 import {
@@ -15,6 +15,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import LoginThreeField from '@/components/auth/LoginThreeField.vue'
 import LoginFormAura from '@/components/auth/LoginFormAura.vue'
+import { fillDisplacementMap, prunePulses } from '@/components/auth/loginWave'
 
 type AuthMode = 'login' | 'register'
 
@@ -41,6 +42,48 @@ const reduceMotion = ref(
 
 let clockTimer: ReturnType<typeof setInterval> | undefined
 let sceneTimer: ReturnType<typeof setInterval> | undefined
+let wobbleRaf = 0
+const pageRef = ref<HTMLElement | null>(null)
+const waveMapRef = ref<SVGImageElement | null>(null)
+const CLOTH_SCALE = 72
+const clothCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null
+if (clothCanvas) {
+  clothCanvas.width = 96
+  clothCanvas.height = 54
+}
+const clothCtx = clothCanvas?.getContext('2d', { willReadFrequently: true }) ?? null
+const clothData = clothCtx ? clothCtx.createImageData(96, 54) : null
+const waveRest = { cx: 0, cy: 0, w: 1, h: 1 }
+
+function captureWaveRests() {
+  const root = pageRef.value
+  if (!root) return
+  const sheet = root.querySelector<HTMLElement>('[data-wave-cloth]')
+  if (!sheet) return
+  const box = sheet.getBoundingClientRect()
+  waveRest.cx = box.left + box.width * 0.5
+  waveRest.cy = box.top + box.height * 0.5
+  waveRest.w = box.width
+  waveRest.h = box.height
+}
+
+function pushClothMap(t: number) {
+  const img =
+    waveMapRef.value ||
+    (pageRef.value?.querySelector('#auth-wave-cloth feImage') as SVGImageElement | null)
+  if (!clothCtx || !clothData || !clothCanvas || !img) return
+  fillDisplacementMap(clothData, waveRest, t, CLOTH_SCALE)
+  clothCtx.putImageData(clothData, 0, 0)
+  const url = clothCanvas.toDataURL()
+  img.setAttribute('href', url)
+  img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', url)
+}
+
+function floatOnWave(now: number) {
+  wobbleRaf = requestAnimationFrame(floatOnWave)
+  prunePulses(now * 0.001)
+  pushClothMap(now * 0.001)
+}
 
 const scenes = [
   {
@@ -101,12 +144,18 @@ const scenes = [
 ] as const
 
 const activeScene = computed(() => scenes[sceneIndex.value])
-const titleChars = computed(() => Array.from(activeScene.value.title))
 
 watch(
   () => route.name,
   (name) => {
     mode.value = name === 'register' ? 'register' : 'login'
+  },
+)
+
+watch(
+  () => [sceneIndex.value, mode.value],
+  () => {
+    window.setTimeout(() => captureWaveRests(), 320)
   },
 )
 
@@ -132,11 +181,19 @@ onMounted(() => {
     now.value = new Date()
   }, 1000)
   if (!reduceMotion.value) startSceneTimer()
+  void nextTick(() => {
+    captureWaveRests()
+    pushClothMap(performance.now() * 0.001)
+    wobbleRaf = requestAnimationFrame(floatOnWave)
+  })
+  window.addEventListener('resize', captureWaveRests)
 })
 
 onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer)
   if (sceneTimer) clearInterval(sceneTimer)
+  cancelAnimationFrame(wobbleRaf)
+  window.removeEventListener('resize', captureWaveRests)
 })
 
 const redirectTo = computed(() => {
@@ -259,6 +316,21 @@ const formOverrides = {
     borderFocus: '1px solid rgba(255, 255, 255, 0.5)',
     boxShadowFocus: 'none',
   },
+  Button: {
+    colorPrimary: 'transparent',
+    colorHoverPrimary: 'transparent',
+    colorPressedPrimary: 'transparent',
+    colorFocusPrimary: 'transparent',
+    colorDisabledPrimary: 'transparent',
+    textColorPrimary: '#f8fafc',
+    textColorHoverPrimary: '#ffffff',
+    textColorPressedPrimary: '#e2e8f0',
+    borderPrimary: '1px solid rgba(255, 255, 255, 0.22)',
+    borderHoverPrimary: '1px solid rgba(255, 255, 255, 0.38)',
+    borderPressedPrimary: '1px solid rgba(255, 255, 255, 0.32)',
+    borderFocusPrimary: '1px solid rgba(255, 255, 255, 0.5)',
+    rippleColor: 'transparent',
+  },
 } as const
 
 const inputSkin = formOverrides.Input
@@ -266,7 +338,26 @@ const inputSkin = formOverrides.Input
 
 <template>
   <NConfigProvider :theme="lightTheme" :theme-overrides="pageOverrides">
-    <div class="auth-page" data-page="auth" :data-mode="mode" :data-scene="activeScene.key">
+    <div ref="pageRef" class="auth-page" data-page="auth" :data-mode="mode" :data-scene="activeScene.key">
+      <svg class="wave-filter" width="0" height="0" aria-hidden="true">
+        <filter
+          id="auth-wave-cloth"
+          x="-14%"
+          y="-14%"
+          width="128%"
+          height="128%"
+          color-interpolation-filters="sRGB"
+        >
+          <feImage ref="waveMapRef" result="map" preserveAspectRatio="none" />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="map"
+            scale="72"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+      </svg>
       <div class="stage">
         <article
           v-for="(scene, i) in scenes"
@@ -282,9 +373,10 @@ const inputSkin = formOverrides.Input
         </article>
         <div class="stage-veil" aria-hidden="true" />
         <div class="stage-grain" aria-hidden="true" />
-        <LoginThreeField v-if="!reduceMotion" :scene-key="activeScene.key" />
+        <LoginThreeField :scene-key="activeScene.key" />
       </div>
 
+      <div class="ui-sheet" data-wave-cloth>
       <header class="topbar">
         <p class="brand">ALL-POWERFUL</p>
         <div class="scene-dots" role="tablist" aria-label="背景场景">
@@ -311,14 +403,7 @@ const inputSkin = formOverrides.Input
                 <b>{{ activeScene.no }}</b>
                 <span>{{ activeScene.kicker }}</span>
               </div>
-              <h1 class="hero-title">
-                <span
-                  v-for="(ch, i) in titleChars"
-                  :key="`${activeScene.key}-${i}`"
-                  class="glyph"
-                  :class="`glyph--${i % 5}`"
-                >{{ ch }}</span>
-              </h1>
+              <h1 class="hero-title">{{ activeScene.title }}</h1>
               <p class="hero-line">{{ activeScene.line }}</p>
             </div>
           </Transition>
@@ -331,7 +416,7 @@ const inputSkin = formOverrides.Input
         </section>
 
         <section class="panel" @mouseenter="paused = true" @mouseleave="paused = false">
-          <LoginFormAura v-if="!reduceMotion" :scene-key="activeScene.key" />
+          <LoginFormAura :scene-key="activeScene.key" />
           <NConfigProvider :theme="darkTheme" :theme-overrides="formOverrides">
           <NCard class="card" :bordered="false">
             <div class="mode-tabs">
@@ -424,6 +509,7 @@ const inputSkin = formOverrides.Input
           </NConfigProvider>
         </section>
       </main>
+      </div>
     </div>
   </NConfigProvider>
 </template>
@@ -448,6 +534,7 @@ const inputSkin = formOverrides.Input
   overflow: hidden;
   color: #f8fafc;
   background: #07090d;
+  perspective: 1200px;
 }
 
 .auth-page[data-scene='journal'],
@@ -713,8 +800,17 @@ const inputSkin = formOverrides.Input
     text-shadow 180ms ease;
 }
 
-.hero-copy {
-  max-width: none;
+.wave-filter {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.ui-sheet {
+  position: relative;
+  z-index: 3;
+  filter: url(#auth-wave-cloth);
 }
 
 .hero-meta {
@@ -734,12 +830,10 @@ const inputSkin = formOverrides.Input
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--copy-accent);
-  transition: transform 180ms var(--ease-out), color 180ms ease;
 }
 
 .hero-meta span {
   color: var(--copy-kicker);
-  transition: color 180ms ease, letter-spacing 180ms var(--ease-out);
 }
 
 .hero-meta::after {
@@ -748,60 +842,22 @@ const inputSkin = formOverrides.Input
   height: 1px;
   background: var(--copy-accent);
   opacity: 0.55;
-  transition: width 180ms var(--ease-out), opacity 180ms ease;
 }
 
 .hero-title {
-  display: flex;
-  flex-wrap: nowrap;
-  white-space: nowrap;
   margin: 14px 0 16px;
   color: var(--copy-main);
   font-size: clamp(36px, 4.8vw, 68px);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.04em;
+  white-space: nowrap;
 }
-
-.glyph {
-  display: inline-block;
-  color: var(--g0);
-  cursor: default;
-  text-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
-  transition:
-    transform 180ms var(--ease-out),
-    color 180ms ease,
-    text-shadow 180ms ease,
-    filter 180ms ease;
-}
-
-.glyph--0 { color: var(--g0); }
-.glyph--1 { color: var(--g1); }
-.glyph--2 { color: var(--g2); }
-.glyph--3 { color: var(--g3); }
-.glyph--4 { color: var(--g4); }
 
 .hero-copy.tone-journal .hero-title {
   font-family: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
   font-weight: 700;
   letter-spacing: 0.04em;
-}
-
-.hero-copy.tone-health .hero-title {
-  letter-spacing: -0.06em;
-}
-
-.hero-copy.tone-rhythm .hero-title {
-  letter-spacing: 0.1em;
-  font-weight: 700;
-}
-
-.hero-copy.tone-voyage .hero-title {
-  font-style: italic;
-}
-
-.hero-copy.tone-vault .hero-title {
-  letter-spacing: -0.03em;
 }
 
 .hero-line {
@@ -810,7 +866,6 @@ const inputSkin = formOverrides.Input
   color: var(--copy-body);
   font-size: 16px;
   line-height: 1.7;
-  transition: color 180ms ease, transform 180ms var(--ease-out);
 }
 
 .pillars {
@@ -872,26 +927,28 @@ const inputSkin = formOverrides.Input
   gap: 4px;
   margin-bottom: 18px;
   padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
+  background: transparent;
 }
 
 .mode-tab {
   height: 36px;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
   color: rgba(226, 232, 240, 0.58);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
 .mode-tab.active {
-  background: color-mix(in srgb, var(--copy-accent) 22%, rgba(255, 255, 255, 0.14));
+  background: transparent;
   color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.38);
+  box-shadow: none;
 }
 
 .form {
@@ -949,12 +1006,20 @@ const inputSkin = formOverrides.Input
 .card :deep(.n-button--primary-type) {
   min-height: 46px;
   margin-top: 4px;
-  color: #0b1220 !important;
-  background: linear-gradient(180deg, #ffffff, #e8eef6) !important;
-  border: 0 !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 12px 28px rgba(0, 0, 0, 0.22);
+  color: #f8fafc !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: none !important;
+}
+
+.card :deep(.n-button--primary-type:hover),
+.card :deep(.n-button--primary-type:focus),
+.card :deep(.n-button--primary-type:active),
+.card :deep(.n-button--primary-type.n-button--disabled) {
+  color: #ffffff !important;
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  box-shadow: none !important;
 }
 
 .scene-copy-enter-active,
@@ -993,64 +1058,6 @@ const inputSkin = formOverrides.Input
     letter-spacing: 0.22em;
     text-shadow: 0 0 18px color-mix(in srgb, var(--copy-accent) 55%, transparent);
   }
-  .hero-meta:hover b {
-    transform: translate3d(0, -3px, 0);
-    color: #fff;
-  }
-  .hero-meta:hover span {
-    letter-spacing: 0.28em;
-    color: var(--copy-accent);
-  }
-  .hero-meta:hover::after {
-    width: 72px;
-    opacity: 1;
-  }
-  .glyph--0:hover {
-    transform: translate3d(0, -8px, 0);
-    text-shadow: 0 12px 28px color-mix(in srgb, var(--g0) 55%, transparent);
-  }
-  .glyph--1:hover {
-    transform: scale(1.16) rotate(-8deg);
-    color: #fff;
-  }
-  .glyph--2:hover {
-    transform: translate3d(0, -4px, 0) scale(1.08);
-    color: #fff;
-    text-shadow:
-      0 0 12px var(--g2),
-      0 0 28px color-mix(in srgb, var(--g2) 70%, transparent);
-  }
-  .glyph--3:hover {
-    transform: skewX(-10deg) translate3d(0, -3px, 0);
-    color: var(--copy-accent);
-  }
-  .glyph--4:hover {
-    transform: scale(1.2);
-    filter: brightness(1.25);
-    text-shadow: 0 0 22px var(--g4);
-  }
-  .hero-copy.tone-journal .glyph--1:hover {
-    transform: rotate(-12deg) translate3d(0, -6px, 0);
-  }
-  .hero-copy.tone-health .glyph--4:hover {
-    transform: scale(1.28) rotate(6deg);
-  }
-  .hero-copy.tone-rhythm .glyph--0:hover {
-    transform: translate3d(0, -12px, 0);
-  }
-  .hero-copy.tone-voyage .glyph--3:hover {
-    transform: skewX(-16deg) rotate(4deg);
-  }
-  .hero-copy.tone-vault .glyph--2:hover {
-    text-shadow:
-      0 0 10px #fff,
-      0 0 24px var(--g2),
-      0 0 42px var(--g1);
-  }
-  .hero-line:hover {
-    color: var(--copy-main);
-    transform: translate3d(6px, 0, 0);
-  }
   .pillars li:hover {
     border-color: color-mix(in srgb, var(--copy-accent) 70%, transparent);
     background: color-mix(in srgb, var(--copy-accent) 22%, rgba(255, 255, 255, 0.08));
@@ -1069,11 +1076,7 @@ const inputSkin = formOverrides.Input
     width: 100%;
     margin: 0 auto;
   }
-  .hero-copy {
-    max-width: none;
-  }
   .hero-title {
-    max-width: none;
     font-size: clamp(34px, 9vw, 52px);
   }
 }
@@ -1086,10 +1089,7 @@ const inputSkin = formOverrides.Input
   .scene-copy-leave-active,
   .form-swap-enter-active,
   .form-swap-leave-active,
-  .glyph,
   .kicker,
-  .hero-line,
-  .hero-meta b,
   .pillars li {
     transition: opacity 200ms ease, color 200ms ease;
     animation: none !important;
@@ -1152,5 +1152,53 @@ html[data-preset='sketch'] [data-page='auth'] .n-input textarea {
   transition: background-color 99999s ease-out 0s;
   box-shadow: 0 0 0 1000px transparent inset !important;
   -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+}
+
+[data-page='auth'] .n-button,
+html[data-preset='sketch'] [data-page='auth'] .n-button {
+  --n-color: transparent !important;
+  --n-color-hover: transparent !important;
+  --n-color-pressed: transparent !important;
+  --n-color-focus: transparent !important;
+  --n-color-disabled: transparent !important;
+  --n-ripple-color: transparent !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+[data-page='auth'] .n-button:hover,
+[data-page='auth'] .n-button:focus,
+[data-page='auth'] .n-button:active,
+[data-page='auth'] .n-button.n-button--disabled,
+html[data-preset='sketch'] [data-page='auth'] .n-button:hover,
+html[data-preset='sketch'] [data-page='auth'] .n-button:focus,
+html[data-preset='sketch'] [data-page='auth'] .n-button:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-page='auth'] .n-button--primary-type,
+html[data-preset='sketch'] [data-page='auth'] .n-button--primary-type {
+  --n-text-color: #f8fafc !important;
+  --n-text-color-hover: #ffffff !important;
+  --n-text-color-pressed: #e2e8f0 !important;
+  --n-text-color-focus: #ffffff !important;
+  --n-text-color-disabled: rgba(248, 250, 252, 0.45) !important;
+  --n-border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  --n-border-hover: 1px solid rgba(255, 255, 255, 0.38) !important;
+  --n-border-pressed: 1px solid rgba(255, 255, 255, 0.32) !important;
+  --n-border-focus: 1px solid rgba(255, 255, 255, 0.5) !important;
+  --n-border-disabled: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+[data-page='auth'] .n-button--primary-type .n-button__border,
+[data-page='auth'] .n-button--primary-type .n-button__state-border,
+html[data-preset='sketch'] [data-page='auth'] .n-button--primary-type .n-button__border,
+html[data-preset='sketch'] [data-page='auth'] .n-button--primary-type .n-button__state-border {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  box-shadow: none !important;
 }
 </style>

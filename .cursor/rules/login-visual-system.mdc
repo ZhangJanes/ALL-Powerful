@@ -1,0 +1,11 @@
+---
+description: 登录/注册落地页视觉系统（波纹网格、布面位移、玻璃控件）。改这些文件时遵守 login-visual-system skill。
+globs: Frontend/src/views/LoginView.vue,Frontend/src/components/auth/**
+alwaysApply: false
+---
+
+# 登录页视觉
+
+改登录/注册落地页视觉时，先读并遵守 `.cursor/skills/login-visual-system/SKILL.md`。
+
+不要用 `prefers-reduced-motion` 卸载 Three.js；不要恢复文字 shader；UI 用位移图布面而不是 translate/rotate；按钮与输入框保持透明描边。
